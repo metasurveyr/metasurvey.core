@@ -1,0 +1,56 @@
+# Set data on a Survey
+
+Tidy wrapper for `svy$set_data(data)`.
+
+## Usage
+
+``` r
+set_data(svy, data, .copy = FALSE)
+```
+
+## Arguments
+
+- svy:
+
+  Survey object
+
+- data:
+
+  A data.frame or data.table with survey microdata
+
+- .copy:
+
+  Logical; if TRUE, clone the Survey before modifying (default FALSE)
+
+## Value
+
+The Survey object (invisibly). If `.copy=TRUE`, returns a new clone.
+
+## See also
+
+Other survey-objects:
+[`Survey`](https://metasurveyr.github.io/metasurvey.core/reference/Survey.md),
+[`cat_design()`](https://metasurveyr.github.io/metasurvey.core/reference/cat_design.md),
+[`cat_design_type()`](https://metasurveyr.github.io/metasurvey.core/reference/cat_design_type.md),
+[`get_data()`](https://metasurveyr.github.io/metasurvey.core/reference/get_data.md),
+[`get_metadata()`](https://metasurveyr.github.io/metasurvey.core/reference/get_metadata.md),
+[`has_design()`](https://metasurveyr.github.io/metasurvey.core/reference/has_design.md),
+[`has_recipes()`](https://metasurveyr.github.io/metasurvey.core/reference/has_recipes.md),
+[`has_steps()`](https://metasurveyr.github.io/metasurvey.core/reference/has_steps.md),
+[`is_baked()`](https://metasurveyr.github.io/metasurvey.core/reference/is_baked.md),
+[`survey_empty()`](https://metasurveyr.github.io/metasurvey.core/reference/survey_empty.md),
+[`survey_to_data_frame()`](https://metasurveyr.github.io/metasurvey.core/reference/survey_to_data_frame.md),
+[`survey_to_datatable()`](https://metasurveyr.github.io/metasurvey.core/reference/survey_to_datatable.md),
+[`survey_to_tibble()`](https://metasurveyr.github.io/metasurvey.core/reference/survey_to_tibble.md)
+
+## Examples
+
+``` r
+dt <- data.table::data.table(id = 1:5, x = rnorm(5), w = rep(1, 5))
+svy <- Survey$new(
+  data = dt, edition = "2023", type = "test",
+  psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
+)
+new_dt <- data.table::data.table(id = 1:3, x = rnorm(3), w = rep(1, 3))
+svy <- set_data(svy, new_dt)
+```

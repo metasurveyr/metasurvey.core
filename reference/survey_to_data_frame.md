@@ -1,0 +1,52 @@
+# survey_to_data_frame
+
+Convert survey to data.frame
+
+## Usage
+
+``` r
+survey_to_data_frame(svy)
+```
+
+## Arguments
+
+- svy:
+
+  Survey object
+
+## Value
+
+data.frame
+
+## See also
+
+Other survey-objects:
+[`Survey`](https://metasurveyr.github.io/metasurvey.core/reference/Survey.md),
+[`cat_design()`](https://metasurveyr.github.io/metasurvey.core/reference/cat_design.md),
+[`cat_design_type()`](https://metasurveyr.github.io/metasurvey.core/reference/cat_design_type.md),
+[`get_data()`](https://metasurveyr.github.io/metasurvey.core/reference/get_data.md),
+[`get_metadata()`](https://metasurveyr.github.io/metasurvey.core/reference/get_metadata.md),
+[`has_design()`](https://metasurveyr.github.io/metasurvey.core/reference/has_design.md),
+[`has_recipes()`](https://metasurveyr.github.io/metasurvey.core/reference/has_recipes.md),
+[`has_steps()`](https://metasurveyr.github.io/metasurvey.core/reference/has_steps.md),
+[`is_baked()`](https://metasurveyr.github.io/metasurvey.core/reference/is_baked.md),
+[`set_data()`](https://metasurveyr.github.io/metasurvey.core/reference/set_data.md),
+[`survey_empty()`](https://metasurveyr.github.io/metasurvey.core/reference/survey_empty.md),
+[`survey_to_datatable()`](https://metasurveyr.github.io/metasurvey.core/reference/survey_to_datatable.md),
+[`survey_to_tibble()`](https://metasurveyr.github.io/metasurvey.core/reference/survey_to_tibble.md)
+
+## Examples
+
+``` r
+dt <- data.table::data.table(
+  id = 1:5, age = c(25, 30, 45, 50, 60),
+  w = rep(1, 5)
+)
+svy <- Survey$new(
+  data = dt, edition = "2023", type = "ech",
+  psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
+)
+df <- survey_to_data_frame(svy)
+class(df) # "data.frame"
+#> [1] "data.frame"
+```
