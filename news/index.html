@@ -65,19 +65,14 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="metasurveycore-030">metasurvey.core 0.3.0<a class="anchor" aria-label="anchor" href="#metasurveycore-030"></a></h2>
-<ul><li>Version aligned with the <code>metasurvey</code> meta-package (0.3.0).</li>
-<li>Added five English vignettes (recipes, workflows and estimation, complex designs, panel analysis, convey inequality) and Spanish translations of the four core ones.</li>
-<li>Added pkgdown site configuration with a bilingual article index.</li>
-<li>Added rOpenSci submission files: <code>README.md</code>, <code>CONTRIBUTING.md</code>, <code>CODE_OF_CONDUCT.md</code>, <code>LICENSE.md</code>, and <code>codemeta.json</code>.</li>
+<p>Initial release of the local processing engine of the <code>metasurvey</code> ecosystem, extracted from the original monolith (archived as <a href="https://github.com/metasurveyr/metasurvey-legacy" class="external-link"><code>metasurvey-legacy</code></a>) following the modularization suggested during the rOpenSci review. The version number is aligned with the <code>metasurvey</code> meta-package.</p>
+<ul><li>Core engine: <code>Survey</code>, <code>RotativePanelSurvey</code> and <code>PoolSurvey</code> R6 classes, the lazy step pipeline (<code><a href="../reference/step_compute.html">step_compute()</a></code>, <code><a href="../reference/step_recode.html">step_recode()</a></code>, <code><a href="../reference/step_rename.html">step_rename()</a></code>, <code><a href="../reference/step_remove.html">step_remove()</a></code>, <code><a href="../reference/step_join.html">step_join()</a></code>, <code><a href="../reference/step_filter.html">step_filter()</a></code>, <code><a href="../reference/bake_steps.html">bake_steps()</a></code>), recipes with automatic documentation and validation, and estimation workflows built on the <code>survey</code> package (means, totals, ratios and domain estimation with CV-based quality labels).</li>
+<li>Rotating panels with implantation and follow-up waves, pooled estimation, and bootstrap replicate weights via <code><a href="../reference/add_replicate.html">add_replicate()</a></code>.</li>
+<li>Local (JSON-backed) recipe and workflow registries. The remote (<code>"api"</code>) backend is provided through an injectable hook (<code>options(metasurvey.backend_provider = ...)</code>), registered by the companion package <code>metasurvey.explorer.backend</code>; core itself has no network, Shiny, or STATA dependencies.</li>
+<li>13 bilingual vignettes (English and Spanish), including an ECH case study that runs offline on a bundled microdata sample and reproducible examples for seven international household surveys.</li>
+<li>rOpenSci-ready packaging: README, CONTRIBUTING, Code of Conduct, GPL-3 license files, <code>codemeta.json</code>, pkgdown site, and CI (R CMD check, pkgcheck, coverage, pre-commit).</li>
 </ul></div>
-    <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0" id="metasurveycore-010">metasurvey.core 0.1.0<a class="anchor" aria-label="anchor" href="#metasurveycore-010"></a></h2>
-<ul><li>Initial release. Extracted from the <code>metasurvey</code> monolith (now <a href="https://github.com/metasurveyr/metasurvey-legacy" class="external-link"><code>metasurvey-legacy</code></a>) as part of the modularization suggested by the rOpenSci review. See <code>MIGRATION.md</code>.</li>
-<li>Contains the local processing engine: <code>Survey</code>/<code>RotativePanelSurvey</code>/ <code>PoolSurvey</code>, the step pipeline, recipes, workflows, and a local (JSON-backed) recipe/workflow backend. No network, Shiny, or STATA dependencies.</li>
-<li>The remote (<code>"api"</code>) backend is provided via an injectable hook (<code>options(metasurvey.backend_provider = ...)</code>), registered by <code>metasurvey.explorer.backend</code>.</li>
-</ul></div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
-    </nav></aside></div>
+  </main></div>
 
 
     <footer><div class="pkgdown-footer-left">
