@@ -1,0 +1,15 @@
+^.*\.Rproj$
+^CODE_OF_CONDUCT\.md$
+^CONTRIBUTING\.md$
+^LICENSE\.md$
+^MIGRATION\.md$
+^\.Rproj\.user$
+^\.github$
+^\.gitignore$
+^\.lintr$
+^\.pre-commit-config\.yaml$
+^_pkgdown\.yml$
+^codemeta\.json$
+^docs$
+^example-data$
+^pkgdown$

@@ -1,0 +1,398 @@
+---
+title: "Flujos de Trabajo y Estimacion (ES)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Flujos de Trabajo y Estimacion (ES)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+## ¿Qué es un Workflow?
+
+Luego de transformar los datos de la encuesta con steps y recipes, la siguiente tarea es
+la **estimación**: calcular medias, totales, razones y sus errores estándar
+teniendo en cuenta el diseño complejo de la encuesta.
+
+La función `workflow()` envuelve los estimadores del paquete `survey`
+(`svymean`, `svytotal`, `svyratio`, `svyby`) y devuelve resultados ordenados en formato `data.table`
+que incluyen:
+
+- Estimaciones puntuales y errores estándar
+- Coeficientes de variación (CV)
+- Intervalos de confianza
+- Metadatos para la reproducibilidad
+
+## Configuración inicial
+
+Utilizamos el conjunto de datos Academic Performance Index (API) del paquete `survey`,
+que contiene datos reales de una muestra estratificada de escuelas de California.
+
+```{r setup}
+library(metasurvey.core)
+library(survey)
+library(data.table)
+
+data(api, package = "survey")
+dt <- data.table(apistrat)
+
+svy <- Survey$new(
+  data    = dt,
+  edition = "2000",
+  type    = "api",
+  psu     = NULL,
+  engine  = "data.table",
+  weight  = add_weight(annual = "pw")
+)
+```
+
+## Estimación básica
+
+### Media
+
+Estimamos la media poblacional del puntaje API en el año 2000:
+
+```{r mean}
+result <- workflow(
+  list(svy),
+  survey::svymean(~api00, na.rm = TRUE),
+  estimation_type = "annual"
+)
+
+result
+```
+
+### Total
+
+Estimamos la matriculación total en todas las escuelas:
+
+```{r total}
+result_total <- workflow(
+  list(svy),
+  survey::svytotal(~enroll, na.rm = TRUE),
+  estimation_type = "annual"
+)
+
+result_total
+```
+
+### Múltiples estimaciones a la vez
+
+Se pueden pasar varias llamadas de estimación a `workflow()` para calcularlas en un
+único paso:
+
+```{r multiple}
+results <- workflow(
+  list(svy),
+  survey::svymean(~api00, na.rm = TRUE),
+  survey::svytotal(~enroll, na.rm = TRUE),
+  estimation_type = "annual"
+)
+
+results
+```
+
+## Estimación por dominio
+
+Utilizamos `survey::svyby()` para calcular estimaciones por subpoblaciones (dominios):
+
+```{r domain}
+# Mean API score by school type
+api_by_type <- workflow(
+  list(svy),
+  survey::svyby(~api00, ~stype, survey::svymean, na.rm = TRUE),
+  estimation_type = "annual"
+)
+
+api_by_type
+```
+
+```{r domain-award}
+# Mean enrollment by awards status
+enroll_by_award <- workflow(
+  list(svy),
+  survey::svyby(~enroll, ~awards, survey::svymean, na.rm = TRUE),
+  estimation_type = "annual"
+)
+
+enroll_by_award
+```
+
+## Evaluación de la calidad
+
+El **coeficiente de variación (CV)** mide la precisión de la estimación. Se puede utilizar
+`evaluate_cv()` para clasificar la calidad siguiendo las directrices estándar:
+
+| Rango de CV | Calidad | Recomendación |
+|-------------|---------|---------------|
+| < 5%        | Excelente | Usar sin restricciones |
+| 5-10%       | Muy buena | Usar con confianza |
+| 10-15%      | Buena | Usar para la mayoría de los propósitos |
+| 15-25%      | Aceptable | Usar con precaución |
+| 25-35%      | Deficiente | Solo para tendencias generales |
+| >= 35%      | No confiable | No publicar |
+
+```{r cv}
+# Evaluate quality of the API score estimate
+cv_pct <- results$cv[1] * 100
+quality <- evaluate_cv(cv_pct)
+
+cat("CV:", round(cv_pct, 2), "%\n")
+cat("Quality:", quality, "\n")
+```
+
+## RecipeWorkflow: Estimaciones publicables
+
+Un `RecipeWorkflow` agrupa llamadas de estimación con metadatos, lo que hace que el
+análisis sea reproducible y compartible. Registra:
+
+- Qué recipes se utilizaron para la preparación de los datos
+- Qué llamadas de estimación se realizaron
+- Información de autoría y versionado
+
+### Creación de un RecipeWorkflow
+
+```{r create-wf}
+wf <- RecipeWorkflow$new(
+  name = "API Score Analysis 2000",
+  description = "Mean API score estimation by school type",
+  user = "Research Team",
+  survey_type = "api",
+  edition = "2000",
+  estimation_type = "annual",
+  recipe_ids = character(0),
+  calls = list(
+    "survey::svymean(~api00, na.rm = TRUE)",
+    "survey::svyby(~api00, ~stype, survey::svymean, na.rm = TRUE)"
+  )
+)
+
+wf
+```
+
+### Publicación en el registro
+
+Publicamos el workflow para que otros puedan descubrirlo y reutilizarlo:
+
+```{r wf-registry}
+# Configure a local backend
+wf_path <- tempfile(fileext = ".json")
+set_workflow_backend("local", path = wf_path)
+
+# Publish
+publish_workflow(wf)
+
+# Discover workflows
+all_wf <- list_workflows()
+length(all_wf)
+
+# Search by text
+found <- search_workflows("income")
+length(found)
+
+# Filter by survey type
+ech_wf <- filter_workflows(survey_type = "ech")
+length(ech_wf)
+```
+
+### Búsqueda de workflows asociados a un recipe
+
+Si se dispone de un recipe y se quiere saber qué estimaciones se publicaron
+para él, se puede utilizar `find_workflows_for_recipe()`:
+
+```{r find-for-recipe}
+# Create a workflow that references a recipe
+wf2 <- RecipeWorkflow$new(
+  name            = "Labor Market Estimates",
+  user            = "Team",
+  survey_type     = "ech",
+  edition         = "2023",
+  estimation_type = "annual",
+  recipe_ids      = c("labor_force_recipe_001"),
+  calls           = list("survey::svymean(~employed, na.rm = TRUE)")
+)
+
+publish_workflow(wf2)
+
+# Find all workflows that use this recipe
+related <- find_workflows_for_recipe("labor_force_recipe_001")
+length(related)
+if (length(related) > 0) cat("Found:", related[[1]]$name, "\n")
+```
+
+## Compartir mediante la API remota
+
+Para una difusión más amplia, se pueden publicar workflows en la API de metasurvey.
+Las funciones `api_*()` que aparecen a continuación las provee el paquete acompañante
+[`metasurvey.explorer.backend`](https://github.com/metasurveyr/metasurvey.explorer.backend),
+no `metasurvey.core`:
+
+```r
+library(metasurvey.explorer.backend)
+
+# Requires authentication
+api_login("you@example.com", "password")
+
+# Publish
+api_publish_workflow(wf)
+
+# Browse
+all <- api_list_workflows(survey_type = "ech")
+specific <- api_get_workflow("workflow_id_here")
+```
+
+## Pipeline completo
+
+A continuación se presenta un pipeline completo, desde los datos crudos hasta la estimación
+publicable, utilizando el conjunto de datos API:
+
+```{r full-pipeline}
+# 1. Create survey from real data
+dt_full <- data.table(apistrat)
+
+svy_full <- Survey$new(
+  data    = dt_full,
+  edition = "2000",
+  type    = "api",
+  psu     = NULL,
+  engine  = "data.table",
+  weight  = add_weight(annual = "pw")
+)
+
+# 2. Apply steps: compute derived variables
+svy_full <- step_compute(svy_full,
+  api_growth = api00 - api99,
+  high_growth = ifelse(api00 - api99 > 50, 1L, 0L),
+  comment = "API score growth indicators"
+)
+
+svy_full <- step_recode(svy_full, school_level,
+  stype == "E" ~ "Elementary",
+  stype == "M" ~ "Middle",
+  stype == "H" ~ "High",
+  .default = "Other",
+  comment = "School level classification"
+)
+
+# 3. Estimate means
+estimates <- workflow(
+  list(svy_full),
+  survey::svymean(~api_growth, na.rm = TRUE),
+  survey::svymean(~high_growth, na.rm = TRUE),
+  estimation_type = "annual"
+)
+
+estimates
+```
+
+```{r full-pipeline-domain}
+# 4. Domain estimation (by school type)
+by_school <- workflow(
+  list(svy_full),
+  survey::svyby(~api00, ~stype, survey::svymean, na.rm = TRUE),
+  estimation_type = "annual"
+)
+
+by_school
+```
+
+```{r full-pipeline-cv}
+# 5. Assess quality
+for (i in seq_len(nrow(estimates))) {
+  cv_val <- estimates$cv[i] * 100
+  cat(
+    estimates$stat[i], ":",
+    round(cv_val, 1), "% CV -",
+    evaluate_cv(cv_val), "\n"
+  )
+}
+```
+
+## Provenance: Linaje de datos
+
+Cada objeto `Survey` registra metadatos de **provenance**: de dónde vinieron los datos,
+qué steps se aplicaron, cuántas filas sobrevivieron a cada paso y qué versiones de R
+y metasurvey se utilizaron. Esto permite rastrear cualquier estimación hasta los datos
+originales.
+
+```{r provenance}
+# El provenance se completa automaticamente despues de bake_steps()
+prov <- provenance(svy_full)
+prov
+```
+
+El provenance también se adjunta a los resultados de `workflow()`, de modo que siempre
+se puede inspeccionar el linaje completo de una estimación:
+
+```{r provenance-workflow}
+prov_wf <- provenance(estimates)
+cat("metasurvey version:", prov_wf$environment$metasurvey_version, "\n")
+cat("Steps applied:", length(prov_wf$steps), "\n")
+```
+
+Para dejar un registro de auditoría, se puede exportar el provenance a JSON:
+
+```{r provenance-json, eval = FALSE}
+provenance_to_json(prov, "audit_trail.json")
+```
+
+Para comparar dos ejecuciones (por ejemplo, diferentes ediciones), se utiliza
+`provenance_diff()`:
+
+```{r provenance-diff, eval = FALSE}
+diff <- provenance_diff(prov_2022, prov_2023)
+diff$steps_changed
+diff$n_final_changed
+```
+
+## Tablas con calidad de publicación
+
+`workflow_table()` formatea los resultados de estimación como tablas listas para
+publicar usando el paquete `gt`. Agrega intervalos de confianza, clasificación de
+calidad del CV con colores y notas al pie basadas en el provenance.
+
+```{r workflow-table, eval = requireNamespace("gt", quietly = TRUE)}
+workflow_table(estimates)
+```
+
+Se puede personalizar la salida:
+
+```{r workflow-table-opts, eval = requireNamespace("gt", quietly = TRUE)}
+# Locale en espaniol, ocultar SE, titulo personalizado
+workflow_table(
+  estimates,
+  locale = "es",
+  show_se = FALSE,
+  title = "Indicadores de crecimiento API",
+  subtitle = "Escuelas de California, 2000"
+)
+```
+
+Para estimaciones por dominio, la tabla detecta automáticamente las columnas de grupo:
+
+```{r workflow-table-domain, eval = requireNamespace("gt", quietly = TRUE)}
+workflow_table(by_school)
+```
+
+La tabla se puede exportar a cualquier formato que admita `gt::gtsave()`:
+
+```{r workflow-table-export, eval = FALSE}
+tbl <- workflow_table(estimates)
+gt::gtsave(tbl, "estimates.html")
+gt::gtsave(tbl, "estimates.docx")
+gt::gtsave(tbl, "estimates.png")
+```
+
+## Próximos pasos
+
+- **[Creación y publicación de Recipes](recipes-es.html)** -- Construir pipelines de transformación reproducibles
+- **[Diseños de encuesta y validación](complex-designs-es.html)** -- Estratificación, conglomerados, pesos replicados
+- **[Caso de estudio ECH](ech-case-study-es.html)** -- Análisis completo del mercado laboral con estimación

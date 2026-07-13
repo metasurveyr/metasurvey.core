@@ -1,0 +1,12 @@
+bibentry(
+  bibtype  = "Manual",
+  title    = "metasurvey.core: Local Engine for Reproducible Survey Data Processing",
+  author   = c(
+    person("Mauro", "Loprete"),
+    person("Natalia", "da Silva"),
+    person("Fabricio", "Machado")
+  ),
+  year     = format(Sys.Date(), "%Y"),
+  url      = "https://github.com/metasurveyr/metasurvey.core",
+  note     = paste("R package version", meta$Version)
+)

@@ -1,0 +1,52 @@
+url: https://metasurveyr.github.io/metasurvey.core
+
+template:
+  bootstrap: 5
+  light-switch: true
+  bslib:
+    primary: "#0d6efd"
+    border-radius: "0.375rem"
+
+navbar:
+  structure:
+    left:  [articles, reference, news]
+    right: [search, github, lightswitch]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: Core Features
+        - text: Creating and Sharing Recipes
+          href: articles/recipes.html
+        - text: Workflows & Estimation
+          href: articles/workflows-and-estimation.html
+        - text: -------
+        - text: Advanced Topics
+        - text: Survey Designs and Validation
+          href: articles/complex-designs.html
+        - text: Rotating Panels and PoolSurvey
+          href: articles/panel-analysis.html
+        - text: -------
+        - text: Case Studies
+        - text: "ECH: From STATA to R"
+          href: articles/ech-case-study.html
+        - text: International Surveys
+          href: articles/international-surveys.html
+        - text: -------
+        - text: Integrations
+        - text: Inequality with convey
+          href: articles/convey-inequality.html
+        - text: -------
+        - text: "Español"
+        - text: Creando y compartiendo recetas
+          href: articles/recipes-es.html
+        - text: Workflows y estimación
+          href: articles/workflows-and-estimation-es.html
+        - text: Diseños y validación
+          href: articles/complex-designs-es.html
+        - text: Paneles rotativos y PoolSurvey
+          href: articles/panel-analysis-es.html
+        - text: "ECH: de STATA a R"
+          href: articles/ech-case-study-es.html
+        - text: Encuestas internacionales
+          href: articles/international-surveys-es.html

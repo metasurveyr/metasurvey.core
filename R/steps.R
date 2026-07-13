@@ -1,0 +1,2831 @@
+# Migrado de metasurvey-legacy/R/steps.R
+# Paquete metasurvey.core
+# Origen: https://github.com/metasurveyr/metasurvey-legacy
+
+#' @importFrom data.table copy
+#' @importFrom methods is
+NULL
+
+# Nombres asignados dentro de una expresion (targets de `<-`, `=` o
+# `<<-`), p. ej. temporales de un bloque `{ }`: no son columnas.
+collect_assigned_vars <- function(e) {
+  if (!is.call(e)) {
+    return(character())
+  }
+  fn <- e[[1]]
+  is_assign <- identical(fn, quote(`<-`)) ||
+    identical(fn, quote(`=`)) ||
+    identical(fn, quote(`<<-`))
+  own <- if (is_assign && is.name(e[[2]])) {
+    as.character(e[[2]])
+  } else {
+    character()
+  }
+  unique(c(
+    own,
+    unlist(lapply(as.list(e)[-1], collect_assigned_vars))
+  ))
+}
+
+# Reemplaza el argumento `svy` del call grabado por el placeholder `.`
+# para que el step sea portable: `svy |> step_*()`, `svy <- step_*(svy, ...)`
+# y `svy %>% step_*()` quedan todos como `step_*(svy = ., ...)`, la forma
+# que bake_recipes() sustituye por el survey receptor. Sin esto, el deparse
+# arrastra la expresion del autor (p. ej. `ech0` o el pipeline entero con
+# |>) y al hornear la receta en otra sesion falla o re-evalua data ajena.
+canonicalize_step_call <- function(.call) {
+  if (is.call(.call) && "svy" %in% names(.call)) {
+    .call[["svy"]] <- quote(.)
+  }
+  .call
+}
+
+compute <- function(svy, ..., .by = NULL,
+                    .copy = use_copy_default(),
+                    lazy = lazy_default()) {
+  .dots <- substitute(...)
+
+
+  if (!lazy) {
+    if (!.copy) {
+      .data <- get_data(svy)
+    } else {
+      .clone <- svy$shallow_clone()
+      .data <- get_data(.clone)
+    }
+
+    # is.call()/is.name() (no methods::is): un bloque `{ }` o un `if`
+    # tienen clase "{" / "if", que is(x, "call") no reconoce, y caerian
+    # en la rama de tipos simples perdiendo los nombres de las exprs
+    is_simple_type <- !is.call(.dots) && !is.name(.dots) &&
+      !is.numeric(.dots) && !is.logical(.dots)
+    if (is_simple_type) {
+      .exprs <- list()
+      for (i in seq.int(2L, length(.dots))) {
+        .exprs <- c(.exprs, .dots[[i]])
+      }
+    } else {
+      .exprs <- substitute(list(...))
+    }
+
+    .expr_list <- if (is.call(.exprs)) as.list(.exprs)[-1] else .exprs
+    .nms <- names(.expr_list)
+
+    if (!is.null(.by)) {
+      # Bloque `{ a <- e1; b <- e2; list(a, b) }` como j: data.table lo
+      # evalua secuencialmente por grupo, asi cada expresion ve las
+      # anteriores de la misma llamada (#215). `:=` con by= reemplaza al
+      # merge() que reordenaba filas y dejaba key residual (#221).
+      .assigns <- lapply(seq_along(.expr_list), function(i) {
+        call("<-", as.name(.nms[[i]]), .expr_list[[i]])
+      })
+      .ret <- as.call(c(quote(list), lapply(.nms, as.name)))
+      .block <- as.call(c(list(quote(`{`)), .assigns, list(.ret)))
+      .j <- as.call(list(quote(`:=`), .nms, .block))
+      .data[, j, by = .by, env = list(j = .j)]
+    } else {
+      # Evaluacion secuencial con un contexto que shadowea columnas:
+      # cada expresion ve los valores ya computados en la misma llamada
+      # (semantica mutate, #215) y un unico `:=` al final asegura
+      # all-or-nothing (sin estado parcial si una expresion falla)
+      .ctx <- as.list(.data)
+      .vals <- list()
+      for (i in seq_along(.expr_list)) {
+        .vals[.nms[[i]]] <- list(eval(.expr_list[[i]], .ctx))
+        .ctx[.nms[[i]]] <- .vals[.nms[[i]]]
+      }
+      .data[, (.nms) := .vals]
+    }
+
+
+    if (!.copy) {
+      return(set_data(svy, .data))
+    } else {
+      return(set_data(.clone, .data))
+    }
+  } else {
+    if (!.copy) {
+      return(svy)
+    } else {
+      return(svy$shallow_clone())
+    }
+  }
+}
+
+
+#' @importFrom data.table copy
+
+recode <- function(svy, new_var, ...,
+                   .default = NA_character_,
+                   ordered = FALSE,
+                   .copy = use_copy_default(),
+                   .to_factor = FALSE,
+                   lazy = lazy_default()) {
+  .penv <- parent.frame()
+  if (!lazy) {
+    if (!.copy) {
+      .data <- svy$get_data()
+    } else {
+      .clone <- svy$shallow_clone()
+      .data <- get_data(.clone)
+    }
+
+    .exprs <- substitute(list(...))
+    .exprs <- eval(.exprs, .data, .penv)
+
+    if (!is(.exprs[[1]], "formula")) {
+      .exprs <- .exprs[[1]]
+    }
+
+    # RHS values keep their native type (character, numeric, integer,
+    # logical); coercion to character happens only for factor levels
+    .values <- lapply(
+      seq_along(.exprs),
+      function(x) eval(.exprs[[x]][[3]], .data, .penv)
+    )
+
+    .labels <- unique(c(
+      as.character(.default),
+      unlist(lapply(.values, as.character))
+    ))
+
+
+    if (.to_factor) {
+      .data[
+        ,
+        (new_var) := factor(
+          .default,
+          levels = .labels,
+          ordered = ordered
+        )
+      ]
+    } else {
+      .data[
+        ,
+        (new_var) := .default
+      ]
+    }
+
+    # First matching condition wins (case_when semantics): rows already
+    # assigned by an earlier condition are not overwritten
+    .assigned <- rep(FALSE, nrow(.data))
+    for (.expr in seq_along(.exprs)) {
+      .filter <- eval(.exprs[[.expr]][[2]], .data, .penv)
+      .rows <- which(.filter & !.assigned)
+      if (length(.rows) > 0) {
+        .value <- .values[[.expr]]
+        if (length(.value) == nrow(.data)) {
+          .value <- .value[.rows]
+        }
+        if (.to_factor) {
+          .value <- as.character(.value)
+        }
+        .data[.rows, (new_var) := .value]
+        .assigned[.rows] <- TRUE
+      }
+    }
+
+    if (!.copy) {
+      return(set_data(svy, .data))
+    } else {
+      return(set_data(.clone, .data))
+    }
+  } else {
+    if (!.copy) {
+      return(svy)
+    } else {
+      return(svy$shallow_clone())
+    }
+  }
+}
+
+
+filter_rows <- function(svy, ..., .by = NULL,
+                        .copy = use_copy_default(),
+                        lazy = lazy_default()) {
+  if (!lazy) {
+    if (!.copy) {
+      .data <- get_data(svy)
+    } else {
+      .clone <- svy$shallow_clone()
+      .data <- get_data(.clone)
+    }
+
+    .conditions <- substitute(list(...))
+
+    # Build combined AND condition from all expressions
+    combined <- NULL
+    for (i in seq.int(2L, length(.conditions))) {
+      cond <- .conditions[[i]]
+      if (is.null(combined)) {
+        combined <- cond
+      } else {
+        combined <- substitute(a & b, list(a = combined, b = cond))
+      }
+    }
+
+    if (!is.null(.by)) {
+      .data <- .data[, .SD[eval(combined, .SD)], by = .by]
+    } else {
+      .data <- .data[eval(combined, .data, parent.frame())]
+    }
+
+    if (!.copy) {
+      return(set_data(svy, .data))
+    } else {
+      return(set_data(.clone, .data))
+    }
+  } else {
+    if (!.copy) {
+      return(svy)
+    } else {
+      return(svy$shallow_clone())
+    }
+  }
+}
+
+
+#' Create computation steps for survey variables
+#'
+#' This function uses optimized expression evaluation
+#' with automatic dependency detection and error
+#' prevention. All computations are validated before
+#' execution.
+#'
+#' @param svy A `Survey` or `RotativePanelSurvey` object.
+#'   If NULL, creates a step that can be applied later
+#'   using the pipe operator (%>%)
+#' @param ... Computation expressions with automatic
+#'   optimization. Names are assigned using
+#'   `new_var = expression`
+#' @param .by Vector of variables to group computations
+#'   by. The system automatically validates these
+#'   variables exist before execution
+#' @param .copy Logical indicating whether to create
+#'   a copy of the object before applying
+#'   transformations. Defaults to `use_copy_default()`
+#' @param use_copy `r lifecycle::badge("deprecated")` Use `.copy` instead.
+#' @param comment Descriptive text for the step for
+#'   documentation and traceability. Compatible with
+#'   Markdown syntax. Defaults to "Compute step"
+#' @param .level For RotativePanelSurvey objects (default `"auto"`),
+#'   specifies the level where computations are
+#'   applied: `"auto"` (both), `"implantation"`, or `"follow_up"`
+#'
+#' @return Same type of input object (`Survey` or `RotativePanelSurvey`)
+#'   with new computed variables and the step added to the history
+#'
+#' @details
+#' **Execution model:** The computation is applied immediately when the
+#' step is created and the step is recorded as already executed
+#' (`bake = TRUE`). Calling [bake_steps()] afterwards is safe: executed
+#' steps are skipped, so expressions are never applied twice.
+#'
+#' **Expression processing:**
+#' Expressions are evaluated using data.table's `:=` operator.
+#' Within a single call, expressions are evaluated sequentially, so a
+#' later expression can reference variables created by earlier ones
+#' (mutate semantics): `step_compute(svy, horamen = f85 * 4.3,
+#' yhora = pt4 / horamen)`. Variable dependencies are detected
+#' automatically via `all.vars()`; names created by earlier expressions
+#' of the same call are not reported as dependencies.
+#' Missing variables are caught before execution.
+#'
+#' **Grouped computations:** Use `.by` to compute aggregated values
+#' (e.g., group means) broadcast to all rows of each group. Row order
+#' is preserved.
+#'
+#' For RotativePanelSurvey objects, `.level` controls where computations
+#' are applied:
+#' - `"auto"` (default): applies to both implantation and follow-ups
+#' - `"implantation"`: household/dwelling level only
+#' - `"follow_up"`: individual/person level only
+#'
+#' @examples
+#' # Basic computation
+#' dt <- data.table::data.table(
+#'   id = 1:5, age = c(25, 30, 45, 50, 60), w = 1
+#' )
+#' svy <- Survey$new(
+#'   data = dt, edition = "2023", type = "test",
+#'   psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
+#' )
+#' svy <- svy |> step_compute(age_squared = age^2, comment = "Age squared")
+#' svy <- bake_steps(svy)
+#' get_data(svy)
+#'
+#' \donttest{
+#' # ECH example: labor indicator
+#' # ech <- ech |>
+#' #   step_compute(
+#' #     unemployed = ifelse(POBPCOAC %in% 3:5, 1, 0),
+#' #     comment = "Unemployment indicator")
+#' }
+#' @seealso
+#' \code{\link{step_recode}} for categorical recodings
+#' \code{\link{bake_steps}} to execute all pending steps
+#'
+#' @keywords step
+#' @family steps
+#' @export
+
+step_compute <- function(
+  svy = NULL, ..., .by = NULL,
+  .copy = use_copy_default(),
+  comment = "Compute step",
+  .level = "auto",
+  use_copy = deprecated()
+) {
+  if (lifecycle::is_present(use_copy)) {
+    lifecycle::deprecate_warn("0.0.12", "step_compute(use_copy)", "step_compute(.copy)")
+    .copy <- use_copy
+  }
+  .level <- match.arg(.level, c("auto", "implantation", "follow_up"))
+  .call <- canonicalize_step_call(match.call())
+
+  # Capture and prepare expressions
+  exprs <- as.list(substitute(list(...))[-1])
+  expr_names <- names(exprs)
+
+  # Collect dependencies using simple variable detection; variables
+  # assigned inside the expression (e.g. temporaries in a `{ }` block)
+  # are locals, not survey columns. Names created by *earlier*
+  # expressions of the same call are internal (mutate semantics), so
+  # the exclusion is positional: `age = age * 2` keeps its real
+  # dependency, but `yhora = pt4 / horamen` after `horamen = ...`
+  # does not depend on a pre-existing `horamen` column
+  dependencies <- unique(unlist(lapply(seq_along(exprs), function(i) {
+    vars <- setdiff(all.vars(exprs[[i]]), collect_assigned_vars(exprs[[i]]))
+    setdiff(vars, expr_names[seq_len(i - 1L)])
+  })))
+
+  if (is(svy, "RotativePanelSurvey")) {
+    return(step_compute_rotative(svy, ...,
+      .by = .by, .copy = .copy,
+      comment = comment, .level = .level, .call = .call
+    ))
+  }
+
+  # Store dependencies
+  depends_on <- if (length(dependencies) > 0) dependencies else NULL
+
+  if (.copy) {
+    # Direct evaluation with compute function
+    # (force lazy=FALSE to execute immediately)
+    .svy_after <- compute(
+      svy, ...,
+      .by = .by,
+      .copy = .copy, lazy = FALSE
+    )
+
+    .new_vars <- expr_names
+
+    if (length(.new_vars) > 0) {
+      step <- Step$new(
+        name = paste("Compute:", paste(.new_vars, collapse = ", ")),
+        edition = get_edition(.svy_after),
+        survey_type = get_type(.svy_after),
+        type = "compute",
+        new_var = paste(.new_vars, collapse = ", "),
+        exprs = substitute(list(...)),
+        call = .call,
+        svy_before = NULL,
+        default_engine = get_engine(),
+        depends_on = depends_on,
+        comment = comment,
+        by_vars = .by,
+        bake = TRUE
+      )
+
+      if (validate_step(svy, step)) {
+        .svy_after$add_step(step)
+      } else {
+        stop(
+          sprintf(
+            "Step validation failed for compute step creating: %s",
+            paste(.new_vars, collapse = ", ")
+          ),
+          call. = FALSE
+        )
+      }
+      return(.svy_after)
+    } else {
+      metasurvey_msg("No new variable created: ", substitute(list(...)))
+      return(svy)
+    }
+  } else {
+    names_vars <- names(get_data(svy))
+    compute(svy, ..., .by = .by, .copy = .copy, lazy = FALSE)
+    .new_vars <- names(substitute(list(...)))[-1]
+    not_in_data <- !(.new_vars %in% names_vars)
+    .new_vars <- .new_vars[not_in_data]
+
+    step <- Step$new(
+      name = paste("New variable:", paste(.new_vars, collapse = ", ")),
+      edition = get_edition(svy),
+      survey_type = get_type(svy),
+      type = "compute",
+      new_var = paste(.new_vars, collapse = ", "),
+      exprs = substitute(list(...)),
+      call = .call,
+      svy_before = NULL,
+      default_engine = get_engine(),
+      comment = comment,
+      depends_on = depends_on,
+      by_vars = .by,
+      bake = TRUE
+    )
+
+    svy$add_step(step)
+    invisible(svy)
+  }
+}
+
+#' Step compute rotative
+#' @param svy Survey object
+#' @param ... Expressions to compute
+#' @param .copy Copy
+#' @param .by By
+#' @param comment Comment
+#' @return Survey object
+#' @keywords step
+#' @noRd
+#' @keywords internal
+
+
+step_compute_rotative <- function(
+  svy, ..., .by = NULL,
+  .copy = use_copy_default(),
+  comment = "Compute step",
+  .level = "auto", .call
+) {
+  follow_up_processed <- svy$follow_up
+  implantation_processed <- svy$implantation
+
+
+  if (.level == "auto" || .level == "follow_up") {
+    follow_up_processed <- lapply(svy$follow_up, function(sub_svy) {
+      step_compute(
+        sub_svy, ...,
+        .by = .by,
+        .copy = .copy,
+        comment = comment
+      )
+    })
+  }
+
+  if (.level == "auto" || .level == "implantation") {
+    implantation_processed <- step_compute(
+      svy$implantation, ...,
+      .by = .by,
+      .copy = .copy,
+      comment = comment
+    )
+  }
+
+
+  if (length(implantation_processed$steps) > 0) {
+    steps <- implantation_processed$steps
+  } else {
+    steps <- follow_up_processed[[1]]$steps
+  }
+
+
+  result <- RotativePanelSurvey$new(
+    implantation = implantation_processed,
+    follow_up = follow_up_processed,
+    type = svy$type,
+    default_engine = "data.table",
+    steps = NULL,
+    recipes = NULL,
+    workflows = NULL,
+    design = NULL
+  )
+
+  result$steps <- steps
+
+  if (.copy) {
+    return(result)
+  } else {
+    svy$implantation <- implantation_processed
+    svy$follow_up <- follow_up_processed
+    svy$steps <- steps
+    return(svy)
+  }
+}
+
+#' Create recoding steps for categorical variables
+#'
+#' This function uses optimized expression evaluation
+#' for all recoding conditions. All conditional
+#' expressions are validated and optimized for
+#' efficient execution.
+#'
+#' @param svy A `Survey` or `RotativePanelSurvey`
+#'   object. If NULL, creates a step that can be
+#'   applied later using the pipe operator (%>%)
+#' @param new_var Name of the new variable to create
+#'   (unquoted)
+#' @param ... Sequence of two-sided formulas defining
+#'   recoding rules. Left-hand side (LHS) is a
+#'   conditional expression, right-hand side (RHS)
+#'   defines the replacement value.
+#'   Format: `condition ~ value`
+#' @param .default Default value assigned when no
+#'   condition is met. Defaults to `NA_character_`
+#' @param .name_step `r lifecycle::badge("deprecated")`
+#'   Custom name for the step in the history. Now
+#'   auto-generated from the variable name. Use `comment`
+#'   for user-facing documentation instead.
+#' @param ordered Logical indicating whether the new
+#'   variable should be an ordered factor.
+#'   Defaults to FALSE
+#' @param .copy Logical indicating whether to
+#'   create a copy of the object before applying
+#'   transformations. Defaults to `use_copy_default()`
+#' @param use_copy `r lifecycle::badge("deprecated")` Use `.copy` instead.
+#' @param comment Descriptive text for the step for
+#'   documentation and traceability. Compatible with
+#'   Markdown syntax. Defaults to "Recode step"
+#' @param .to_factor Logical indicating whether the
+#'   new variable should be converted to a factor.
+#'   Defaults to FALSE
+#' @param .level For RotativePanelSurvey objects (default `"auto"`),
+#'   specifies the level where recoding is applied:
+#'   `"auto"` (both), `"implantation"`, or `"follow_up"`
+#'
+#' @return Same type of input object (`Survey` or `RotativePanelSurvey`)
+#'   with the new recoded variable and the step added to the history
+#'
+#' @details
+#' **Execution model:** The recoding is applied immediately when the
+#' step is created and the step is recorded as already executed
+#' (`bake = TRUE`). Calling [bake_steps()] afterwards is safe: executed
+#' steps are skipped, so rules are never applied twice.
+#'
+#' **Condition evaluation:** Conditions are two-sided formulas evaluated
+#' in order. The first matching condition determines the assigned value.
+#' If no condition matches, `.default` is used. Replacement values keep
+#' their native type (character, numeric, integer or logical).
+#'
+#' Condition examples:
+#' - Simple: `variable == 1 ~ "Yes"`
+#' - Complex: `age >= 18 & income > 12000 ~ "High"`
+#' - Vectorized: `variable %in% c(1,2,3) ~ "Group A"`
+#' - Logical: `!is.na(education) ~ "Has education"`
+#'
+#' @examples
+#' # Basic recode: categorize ages
+#' dt <- data.table::data.table(
+#'   id = 1:6, age = c(10, 25, 45, 60, 70, 80), w = 1
+#' )
+#' svy <- Survey$new(
+#'   data = dt, edition = "2023", type = "test",
+#'   psu = NULL, engine = "data.table",
+#'   weight = add_weight(annual = "w")
+#' )
+#' svy <- svy |>
+#'   step_recode(
+#'     age_group,
+#'     age < 18 ~ "Under 18",
+#'     age >= 18 & age < 65 ~ "Working age",
+#'     age >= 65 ~ "Senior",
+#'     .default = "Unknown"
+#'   )
+#' svy <- bake_steps(svy)
+#' get_data(svy)
+#'
+#' \donttest{
+#' # ECH example: labor force status
+#' # ech <- ech |>
+#' #   step_recode(labor_status,
+#' #     POBPCOAC == 2 ~ "Employed",
+#' #     POBPCOAC %in% 3:5 ~ "Unemployed",
+#' #     .default = "Missing")
+#' }
+#'
+#' @seealso
+#' \code{\link{step_compute}} for more complex calculations
+#' \code{\link{bake_steps}} to execute all pending steps
+#' \code{\link{get_steps}} to view step history
+#'
+#' @keywords step
+#' @family steps
+#' @export
+
+step_recode <- function(
+  svy,
+  new_var, ...,
+  .default = NA_character_,
+  .name_step = NULL,
+  ordered = FALSE,
+  .copy = use_copy_default(),
+  comment = "Recode step",
+  .to_factor = FALSE,
+  .level = "auto",
+  use_copy = deprecated()
+) {
+  if (lifecycle::is_present(use_copy)) {
+    lifecycle::deprecate_warn("0.0.12", "step_recode(use_copy)", "step_recode(.copy)")
+    .copy <- use_copy
+  }
+  .level <- match.arg(.level, c("auto", "implantation", "follow_up"))
+
+  conditions <- list(...)
+  # A single pre-built list of formulas is a supported input path
+  # (recode() unwraps it downstream): validate its elements instead
+  if (length(conditions) == 1L && is.list(conditions[[1]]) && !inherits(conditions[[1]], "formula")) {
+    conditions <- conditions[[1]]
+  }
+  if (length(conditions) == 0) {
+    stop_input(
+      "step_recode", "...",
+      "must contain at least one two-sided formula (condition ~ value)"
+    )
+  }
+  is_two_sided <- vapply(
+    conditions,
+    function(f) inherits(f, "formula") && length(f) == 3L,
+    logical(1)
+  )
+  if (!all(is_two_sided)) {
+    stop_input(
+      "step_recode", "...",
+      "must contain only two-sided formulas (condition ~ value)",
+      got = describe_class(conditions[[which(!is_two_sided)[1]]])
+    )
+  }
+
+  .call <- canonicalize_step_call(match.call())
+
+  if (is(svy, "RotativePanelSurvey")) {
+    return(step_recode_rotative(svy, as.character(substitute(new_var)), ...,
+      .default = .default, .name_step = .name_step,
+      ordered = ordered, .copy = .copy,
+      comment = comment, .to_factor = .to_factor,
+      .level = .level, .call = .call
+    ))
+  }
+
+  if (is(svy, "Survey")) {
+    return(step_recode_survey(svy, as.character(substitute(new_var)), ...,
+      .default = .default, .name_step = .name_step,
+      ordered = ordered, .copy = .copy,
+      comment = comment, .to_factor = .to_factor,
+      .call = .call
+    ))
+  }
+
+  # Create standalone step
+  standalone_step <- list(
+    type = "recode",
+    new_var = as.character(substitute(new_var)),
+    conditions = substitute(...),
+    default = .default,
+    name_step = .name_step,
+    comment = comment,
+    call = .call
+  )
+  class(standalone_step) <- c("metasurvey_step", "list")
+
+  return(standalone_step)
+}
+
+#' Step recode survey
+#' @param svy Survey object
+#' @param new_var New variable
+#' @param ... Expressions to recode
+#' @param .default Default value
+#' @param .name_step Name of the step
+#' @param ordered Ordered
+#' @param .copy Copy
+#' @param comment Comment
+#' @keywords step
+#' @noRd
+#' @keywords internal
+
+step_recode_survey <- function(
+  svy, new_var, ...,
+  .default = NA_character_,
+  .name_step = NULL,
+  ordered = FALSE,
+  .copy = use_copy_default(),
+  comment = "Recode step",
+  .to_factor = FALSE,
+  .call = .call
+) {
+  new_var <- as.character(new_var)
+  check_svy <- is.null(get_data(svy))
+  if (check_svy) {
+    return(.call)
+  }
+
+  if (is.null(.name_step)) {
+    .name_step <- paste0("Recode: ", new_var)
+  }
+
+  # Extract dependencies using simple variable detection
+  conditions <- list(...)
+  dependencies <- character()
+
+  for (i in seq_along(conditions)) {
+    condition_formula <- conditions[[i]]
+    if (inherits(condition_formula, "formula")) {
+      lhs_expr <- condition_formula[[2]]
+      # Use all.vars() for fast dependency detection
+      deps <- all.vars(lhs_expr)
+      dependencies <- unique(c(dependencies, deps))
+    }
+  }
+
+  depends_on <- if (length(dependencies) > 0) dependencies else NULL
+
+  recode_opts <- list(
+    .default = .default,
+    ordered = ordered,
+    .to_factor = .to_factor
+  )
+
+  if (.copy) {
+    # Direct recode evaluation (force lazy=FALSE to execute immediately)
+    .svy_after <- recode(
+      svy = svy, new_var = new_var, ...,
+      .default = .default,
+      ordered = ordered,
+      .copy = .copy,
+      .to_factor = .to_factor,
+      lazy = FALSE
+    )
+
+    step <- Step$new(
+      name = .name_step,
+      edition = get_edition(.svy_after),
+      survey_type = get_type(.svy_after),
+      type = "recode",
+      new_var = new_var,
+      exprs = list(...),
+      call = .call,
+      svy_before = NULL,
+      default_engine = get_engine(),
+      depends_on = depends_on,
+      comment = comment,
+      bake = TRUE,
+      recode_opts = recode_opts
+    )
+    .svy_after$add_step(step)
+    return(.svy_after)
+  } else {
+    recode(
+      svy = svy, new_var = new_var, ...,
+      .default = .default,
+      ordered = ordered,
+      .copy = .copy,
+      .to_factor = .to_factor,
+      lazy = FALSE
+    )
+    step <- Step$new(
+      name = .name_step,
+      edition = get_edition(svy),
+      survey_type = get_type(svy),
+      type = "recode",
+      new_var = new_var,
+      exprs = list(...),
+      call = .call,
+      svy_before = NULL,
+      default_engine = get_engine(),
+      depends_on = depends_on,
+      comment = comment,
+      bake = TRUE,
+      recode_opts = recode_opts
+    )
+    svy$add_step(step)
+    invisible(svy)
+  }
+}
+
+#' Step recode rotative
+#' @param svy Survey object
+#' @param new_var New variable
+#' @param ... Expressions to recode
+#' @param .default Default value
+#' @param .name_step Name of the step
+#' @param ordered Ordered
+#' @param .copy Copy
+#' @param comment Comment
+#' @param .to_factor To factor
+#' @return Survey object
+#' @keywords step
+#' @noRd
+#' @keywords internal
+
+step_recode_rotative <- function(
+  svy, new_var, ...,
+  .default = NA_character_,
+  .name_step = NULL,
+  ordered = FALSE,
+  .copy = use_copy_default(),
+  comment = "Recode step",
+  .to_factor = FALSE,
+  .level = "auto", .call
+) {
+  follow_up_processed <- svy$follow_up
+  implantation_processed <- svy$implantation
+
+  if (.level == "auto" || .level == "follow_up") {
+    follow_up_processed <- lapply(svy$follow_up, function(sub_svy) {
+      step_recode_survey(
+        sub_svy, new_var, ...,
+        .default = .default,
+        .name_step = .name_step,
+        ordered = ordered,
+        .copy = .copy,
+        comment = comment,
+        .to_factor = .to_factor,
+        .call = .call
+      )
+    })
+  }
+
+  if (.level == "auto" || .level == "implantation") {
+    implantation_processed <- step_recode_survey(
+      svy$implantation, new_var, ...,
+      .default = .default,
+      .name_step = .name_step,
+      ordered = ordered,
+      .copy = .copy,
+      comment = comment,
+      .to_factor = .to_factor,
+      .call = .call
+    )
+  }
+
+  result <- RotativePanelSurvey$new(
+    implantation = implantation_processed,
+    follow_up = follow_up_processed,
+    type = svy$type,
+    default_engine = "data.table",
+    steps = NULL,
+    recipes = NULL,
+    workflows = NULL,
+    design = NULL
+  )
+
+  if (.copy) {
+    return(result)
+  } else {
+    svy$implantation <- implantation_processed
+    svy$follow_up <- follow_up_processed
+    return(svy)
+  }
+}
+
+
+#' Get formulas
+#' @param steps List of steps
+#' @return List of formulas
+#' @noRd
+
+get_formulas <- function(steps) {
+  if (length(steps) > 0) {
+    vapply(
+      X = seq_along(steps),
+      FUN = function(x) {
+        step <- steps[[x]]
+        exprs <- step$exprs
+        if (step$type == "recode") {
+          paste0(
+            step$new_var,
+            ": ",
+            paste(
+              deparse1(
+                step$exprs
+              ),
+              collapse = "\n"
+            )
+          )
+        } else {
+          deparse1(exprs)
+        }
+      },
+      FUN.VALUE = character(1)
+    )
+  } else {
+    NULL
+  }
+}
+
+#' Get comments
+#' @param steps List of steps
+#' @return List of comments
+#' @noRd
+
+get_comments <- function(steps) {
+  if (length(steps) > 0) {
+    vapply(
+      X = seq_along(steps),
+      FUN = function(x) {
+        step <- steps[[x]]
+        step$comment
+      },
+      FUN.VALUE = character(1)
+    )
+  } else {
+    NULL
+  }
+}
+
+#' Join external data into survey (step)
+#'
+#' Creates a step that joins additional data into a
+#' Survey or RotativePanelSurvey.
+#'
+#' @details
+#' **Execution model:** The join is applied immediately when the step is
+#' created and the step is recorded as already executed (`bake = TRUE`).
+#' Calling [bake_steps()] afterwards is safe: executed steps are skipped,
+#' so the join is never applied twice (which would duplicate overlapping
+#' columns with the `.y` suffix).
+#'
+#' Supports left, inner, right, and full joins. Allows named `by`
+#' mapping (e.g., `c("id" = "code")`) or a simple character vector.
+#' Conflicting column names are resolved by appending `suffixes`
+#' to the right-hand side columns.
+#'
+#' @param svy A Survey or RotativePanelSurvey object.
+#'   If NULL, returns a step call
+#' @param x A data.frame/data.table or a Survey to join into `svy`
+#' @param by Character vector of join keys. Named vector for different names
+#'   between `svy` and `x` (names are keys in `svy`,
+#'   values are keys in `x`).
+#'   If NULL, tries to infer common column names
+#' @param type Join type: "left" (default), "inner", "right", or "full"
+#' @param suffixes Length-2 character vector of suffixes
+#'   for conflicting columns
+#'   from `svy` and `x` respectively. Defaults to c("", ".y")
+#' @param .copy Whether to operate on a copy (default: use_copy_default())
+#' @param use_copy `r lifecycle::badge("deprecated")` Use `.copy` instead.
+#' @param comment Optional description for the step (default `"Join step"`).
+#' @param lazy Internal. Currently ignored: the join always executes
+#'   immediately and the step is recorded as executed.
+#' @param record Internal. Whether to record the step (default `TRUE`).
+#'
+#' @return Modified survey object with the join
+#'   recorded as a step (and applied immediately
+#'   when baked). For RotativePanelSurvey, the join is applied to
+#'   implantation and every follow_up survey.
+#'
+#' @examples
+#' # With data.frame
+#' s <- Survey$new(
+#'   data = data.table::data.table(id = 1:3, w = 1, a = c("x", "y", "z")),
+#'   edition = "2023", type = "ech", psu = NULL, engine = "data.table",
+#'   weight = add_weight(annual = "w")
+#' )
+#' info <- data.frame(id = c(1, 2), b = c(10, 20))
+#' s2 <- step_join(s, info, by = "id", type = "left")
+#' s2 <- bake_steps(s2)
+#'
+#' # With another Survey
+#' s_right <- Survey$new(
+#'   data = data.table::data.table(id = c(2, 3), b = c(200, 300), w2 = 1),
+#'   edition = "2023", type = "ech", psu = NULL, engine = "data.table",
+#'   weight = add_weight(annual = "w2")
+#' )
+#' s3 <- step_join(s, s_right, by = c("id" = "id"), type = "inner")
+#' s3 <- bake_steps(s3)
+#'
+#' @keywords step
+#' @family steps
+#' @export
+step_join <- function(
+  svy,
+  x,
+  by = NULL,
+  type = c("left", "inner", "right", "full"),
+  suffixes = c("", ".y"),
+  .copy = use_copy_default(),
+  comment = "Join step",
+  use_copy = deprecated(),
+  lazy = lazy_default(),
+  record = TRUE
+) {
+  if (lifecycle::is_present(use_copy)) {
+    lifecycle::deprecate_warn("0.0.12", "step_join(use_copy)", "step_join(.copy)")
+    .copy <- use_copy
+  }
+  .call <- canonicalize_step_call(match.call())
+  type <- match.arg(type)
+
+  # Normalize RHS data source
+  rhs_data <- if (methods::is(x, "Survey")) get_data(x) else x
+  if (!is.data.frame(rhs_data)) {
+    stop("x must be a data.frame/data.table or a Survey", call. = FALSE)
+  }
+
+  # RotativePanelSurvey: apply to implantation and each follow_up
+  if (methods::is(svy, "RotativePanelSurvey")) {
+    svy$implantation <- step_join(
+      svy = svy$implantation, x = x, by = by, type = type,
+      suffixes = suffixes, .copy = .copy, comment = comment
+    )
+    svy$follow_up <- lapply(
+      svy$follow_up,
+      function(fu) {
+        step_join(
+          fu,
+          x = x, by = by,
+          type = type,
+          suffixes = suffixes,
+          .copy = .copy,
+          comment = comment
+        )
+      }
+    )
+    return(svy)
+  }
+
+  # If no data yet, return the call (pipeline build)
+  if (is.null(get_data(svy))) {
+    return(.call)
+  }
+
+  lhs_data <- get_data(svy)
+
+  # Derive by mapping
+  if (is.null(by)) {
+    common <- intersect(names(lhs_data), names(rhs_data))
+    if (length(common) == 0) {
+      stop("Cannot infer join keys: no common columns", call. = FALSE)
+    }
+    by.x <- by.y <- common
+  } else {
+    if (is.null(names(by))) {
+      by.x <- by
+      by.y <- by
+    } else {
+      by.x <- names(by)
+      by.y <- unname(by)
+    }
+  }
+
+  # Check keys exist
+  miss_x <- setdiff(by.x, names(lhs_data))
+  miss_y <- setdiff(by.y, names(rhs_data))
+  if (length(miss_x) > 0) {
+    stop(sprintf(
+      "Join keys not found in survey: %s",
+      paste(miss_x, collapse = ", ")
+    ), call. = FALSE)
+  }
+  if (length(miss_y) > 0) {
+    stop(sprintf(
+      "Join keys not found in x: %s",
+      paste(miss_y, collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  # Prepare RHS: resolve name conflicts (excluding join keys)
+  overlap <- intersect(
+    setdiff(names(lhs_data), by.x),
+    setdiff(names(rhs_data), by.y)
+  )
+  if (length(overlap) > 0 && (suffixes[2] %in% c("", NA))) {
+    suffixes[2] <- ".y"
+  }
+  if (length(overlap) > 0) {
+    new_rhs_names <- names(rhs_data)
+    idx <- match(overlap, names(rhs_data))
+    # only rename true overlaps not part of by.y
+    for (nm in overlap) {
+      if (!nm %in% by.y) {
+        new_rhs_names[names(rhs_data) == nm] <- paste0(nm, suffixes[2])
+      }
+    }
+    names(rhs_data) <- new_rhs_names
+  }
+
+  # Compute merge flags
+  all.x <- (type %in% c("left", "full"))
+  all.y <- (type %in% c("right", "full"))
+
+  # Perform merge using data.table merge
+  merged <- merge(
+    data.table::as.data.table(lhs_data),
+    data.table::as.data.table(rhs_data),
+    by.x = by.x,
+    by.y = by.y,
+    all.x = all.x,
+    all.y = all.y,
+    sort = FALSE
+  )
+
+  # Fill NA weights introduced by full/right joins
+  # Get weight column names from the survey
+  if (!is.null(svy$weight) && length(svy$weight) > 0) {
+    weight_cols <- character(0)
+    for (w in svy$weight) {
+      if (is.character(w)) {
+        weight_cols <- c(weight_cols, w)
+      } else if (is.list(w) && !is.null(w$weight)) {
+        weight_cols <- c(weight_cols, w$weight)
+      }
+    }
+    # Fill NA values in weight columns with 1
+    for (wcol in weight_cols) {
+      if (wcol %in% names(merged)) {
+        set_na_idx <- which(is.na(merged[[wcol]]))
+        if (length(set_na_idx) > 0) {
+          data.table::set(merged, i = set_na_idx, j = wcol, value = 1)
+        }
+      }
+    }
+  }
+
+  # Assign data to copy or in-place
+  if (.copy) {
+    out <- svy$shallow_clone()
+    out$set_data(merged)
+  } else {
+    svy$set_data(merged)
+    out <- svy
+  }
+
+  # Build depends_on from join keys
+  if (isTRUE(record)) {
+    depends_on <- unique(by.x)
+    step <- Step$new(
+      name = paste0("Join (", type, "): ", paste(by.x, collapse = ", ")),
+      edition = get_edition(out),
+      survey_type = get_type(out),
+      type = "step_join",
+      new_var = NULL,
+      exprs = list(x = x, by = by, type = type, suffixes = suffixes),
+      call = .call,
+      svy_before = NULL,
+      default_engine = get_engine(),
+      depends_on = depends_on,
+      comment = comment,
+      # the merge already ran above: marking the step as baked prevents
+      # bake_steps() from re-joining and duplicating columns with ".y"
+      bake = TRUE
+    )
+    out$add_step(step)
+  }
+  invisible(out)
+}
+
+#' Remove variables from survey data (step)
+#'
+#' Creates a step that removes one or more variables
+#' from the survey data when baked.
+#'
+#' @param svy A Survey or RotativePanelSurvey object
+#' @param ... Unquoted variable names to remove, or a character vector
+#' @param vars Character vector of variable names to remove.
+#'   Alternative to `...` for programmatic use.
+#' @param .copy Whether to operate on a copy (default: `use_copy_default()`)
+#' @param comment Descriptive text for the step for
+#'   documentation and traceability (default `"Remove variables"`).
+#' @param use_copy `r lifecycle::badge("deprecated")` Use `.copy` instead.
+#' @param lazy Internal. Whether to delay execution (default `lazy_default()`).
+#' @param record Internal. Whether to record the step (default `TRUE`).
+#' @return Survey object with the specified variables
+#'   removed (or queued for removal).
+#'
+#' @details
+#' **Lazy evaluation (default):** By default, steps are recorded but
+#' **not executed** until [bake_steps()] is called.
+#'
+#' Variables can be specified in two ways:
+#' - **Unquoted names:** `step_remove(svy, age, income)`
+#' - **Character vector:** `step_remove(svy, vars = c("age", "income"))`
+#'
+#' **Name resolution:** bare symbols passed via `...` that match a
+#' column name always refer to that column, even if a variable with
+#' the same name exists in the calling environment (column takes
+#' precedence). Symbols that do not match any column are looked up in
+#' the calling environment and, if they hold a character vector, its
+#' values are used as column names. For fully programmatic use prefer
+#' `vars = c("age", "income")`, which skips symbol resolution entirely.
+#'
+#' Variables that don't exist in the data produce a warning
+#' (not an error), allowing pipelines to be robust to missing columns.
+#' @examples
+#' dt <- data.table::data.table(
+#'   id = 1:5, age = c(25, 30, 45, 50, 60),
+#'   w = rep(1, 5)
+#' )
+#' svy <- Survey$new(
+#'   data = dt, edition = "2023", type = "ech",
+#'   psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
+#' )
+#' svy2 <- step_remove(svy, age)
+#' svy2 <- bake_steps(svy2)
+#' "age" %in% names(get_data(svy2)) # FALSE
+#' @family steps
+#' @export
+step_remove <- function(
+  svy, ...,
+  vars = NULL,
+  .copy = use_copy_default(),
+  comment = "Remove variables",
+  use_copy = deprecated(),
+  lazy = lazy_default(),
+  record = TRUE
+) {
+  if (lifecycle::is_present(use_copy)) {
+    lifecycle::deprecate_warn("0.0.12", "step_remove(use_copy)", "step_remove(.copy)")
+    .copy <- use_copy
+  }
+  .call <- canonicalize_step_call(match.call())
+  var_names <- NULL
+  # Prefer explicit vars argument when provided
+  if (!is.null(vars)) {
+    if (is.character(vars)) {
+      var_names <- vars
+    } else {
+      stop("'vars' must be a character vector of variable names", call. = FALSE)
+    }
+  } else {
+    dots_list <- as.list(substitute(list(...)))[-1]
+    data_cols <- if (is(svy, "RotativePanelSurvey")) {
+      unique(unlist(lapply(
+        c(list(svy$implantation), svy$follow_up),
+        function(s) names(get_data(s))
+      )))
+    } else {
+      names(get_data(svy))
+    }
+    caller <- parent.frame()
+    var_names <- unlist(
+      lapply(dots_list, function(expr) {
+        if (is.character(expr)) {
+          return(expr)
+        }
+        if (is.symbol(expr)) {
+          nm <- as.character(expr)
+          # Column names take precedence over homonymous caller variables:
+          # step_remove(svy, x) must remove column "x" even if a local
+          # variable `x` exists in the calling environment
+          if (nm %in% data_cols) {
+            return(nm)
+          }
+          evald <- try(eval(expr, caller), silent = TRUE)
+          if (!inherits(evald, "try-error") && is.character(evald)) {
+            return(evald)
+          }
+          return(nm)
+        }
+        evald <- try(eval(expr, caller), silent = TRUE)
+        if (!inherits(evald, "try-error") && is.character(evald)) {
+          return(evald)
+        }
+        deparse1(expr)
+      }),
+      use.names = FALSE
+    )
+  }
+
+  if (is(svy, "RotativePanelSurvey")) {
+    svy$implantation <- step_remove(
+      svy$implantation,
+      vars = var_names,
+      .copy = .copy,
+      comment = comment,
+      record = record,
+      lazy = lazy
+    )
+    svy$follow_up <- lapply(
+      svy$follow_up,
+      function(x) {
+        step_remove(
+          x,
+          vars = var_names,
+          .copy = .copy,
+          comment = comment,
+          record = record,
+          lazy = lazy
+        )
+      }
+    )
+    return(svy)
+  }
+
+  if (is.null(get_data(svy))) {
+    return(.call)
+  }
+
+  out <- if (.copy) svy$shallow_clone() else svy
+
+  data <- get_data(svy) # Check against original data
+  missing <- setdiff(var_names, names(data))
+  if (length(missing) > 0) {
+    warning(sprintf(
+      "Variables not found and cannot be removed: %s",
+      paste(missing, collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  # Apply change only if not lazy
+  if (!lazy) {
+    cols_to_remove <- intersect(var_names, names(out$data))
+    if (length(cols_to_remove) > 0) {
+      if (data.table::is.data.table(out$data)) {
+        data.table::set(out$data, j = cols_to_remove, value = NULL)
+      } else {
+        out$data <- out$data[,
+          !names(out$data) %in% cols_to_remove,
+          drop = FALSE
+        ]
+      }
+    }
+  }
+
+  if (isTRUE(record)) {
+    step <- Step$new(
+      name = paste0("Remove: ", paste(var_names, collapse = ", ")),
+      edition = get_edition(out),
+      survey_type = get_type(out),
+      type = "step_remove",
+      new_var = NULL,
+      exprs = list(vars = var_names),
+      call = .call,
+      svy_before = NULL,
+      default_engine = get_engine(),
+      depends_on = NULL,
+      comment = comment,
+      bake = !lazy
+    )
+    out$add_step(step)
+  }
+  invisible(out)
+}
+
+#' Rename variables in survey data (step)
+#'
+#' Creates a step that renames variables in the survey data when baked.
+#'
+#' @param svy A Survey or RotativePanelSurvey object
+#' @param ... Pairs in the form `new_name = old_name` (unquoted).
+#' @param mapping A named character vector of the form
+#'   `c(new_name = "old_name")`. Alternative to `...` for
+#'   programmatic use.
+#' @param .copy Whether to operate on a copy (default: `use_copy_default()`)
+#' @param comment Descriptive text for the step for
+#'   documentation and traceability (default `"Rename variables"`).
+#' @param use_copy `r lifecycle::badge("deprecated")` Use `.copy` instead.
+#' @param lazy Internal. Whether to delay execution (default `lazy_default()`).
+#' @param record Internal. Whether to record the step (default `TRUE`).
+#' @return Survey object with the specified variables
+#'   renamed (or queued for renaming).
+#'
+#' @details
+#' **Lazy evaluation (default):** By default, steps are recorded but
+#' **not executed** until [bake_steps()] is called.
+#'
+#' Variables can be renamed in two ways:
+#' - **Unquoted pairs:** `step_rename(svy, new_name = old_name)`
+#' - **Named character vector:** `step_rename(svy, mapping = c(new_name = "old_name"))`
+#'
+#' Variables that don't exist in the data cause an error, unlike
+#' [step_remove()] which issues a warning.
+#' @examples
+#' dt <- data.table::data.table(
+#'   id = 1:5, age = c(25, 30, 45, 50, 60),
+#'   w = rep(1, 5)
+#' )
+#' svy <- Survey$new(
+#'   data = dt, edition = "2023", type = "ech",
+#'   psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
+#' )
+#' svy2 <- step_rename(svy, edad = age)
+#' svy2 <- bake_steps(svy2)
+#' "edad" %in% names(get_data(svy2)) # TRUE
+#' @family steps
+#' @export
+step_rename <- function(
+  svy, ...,
+  mapping = NULL,
+  .copy = use_copy_default(),
+  comment = "Rename variables",
+  use_copy = deprecated(),
+  lazy = lazy_default(),
+  record = TRUE
+) {
+  if (lifecycle::is_present(use_copy)) {
+    lifecycle::deprecate_warn("0.0.12", "step_rename(use_copy)", "step_rename(.copy)")
+    .copy <- use_copy
+  }
+  .call <- canonicalize_step_call(match.call())
+  # Build mapping new -> old
+  if (!is.null(mapping)) {
+    if (is.null(names(mapping)) || !is.character(mapping)) {
+      stop("'mapping' must be a named character vector: new_name = old_name",
+        call. = FALSE
+      )
+    }
+    map <- mapping
+  } else {
+    pairs <- as.list(substitute(list(...)))[-1]
+    if (length(pairs) == 0) {
+      return(svy)
+    }
+    new_names <- names(pairs)
+    if (is.null(new_names) || any(!nzchar(new_names))) {
+      stop_input(
+        "step_rename", "...",
+        "must be named pairs of the form new_name = old_name"
+      )
+    }
+    is_name <- vapply(
+      pairs,
+      function(x) is.symbol(x) || (is.character(x) && length(x) == 1L),
+      logical(1)
+    )
+    if (!all(is_name)) {
+      stop_input(
+        "step_rename", "...",
+        "values must be variable names (bare names or single strings)",
+        got = sprintf("`%s`", deparse1(pairs[[which(!is_name)[1]]]))
+      )
+    }
+    old_names <- vapply(
+      pairs,
+      function(x) {
+        if (is.symbol(x)) {
+          deparse1(x)
+        } else {
+          as.character(x)
+        }
+      },
+      character(1)
+    )
+    map <- stats::setNames(old_names, new_names)
+  }
+
+  if (is(svy, "RotativePanelSurvey")) {
+    # Propagate as explicit mapping to avoid ambiguity
+    svy$implantation <- step_rename(
+      svy = svy$implantation,
+      mapping = map,
+      .copy = .copy,
+      comment = comment,
+      lazy = lazy,
+      record = record
+    )
+    svy$follow_up <- lapply(
+      svy$follow_up,
+      function(x) {
+        step_rename(
+          svy = x,
+          mapping = map,
+          .copy = .copy,
+          comment = comment,
+          lazy = lazy,
+          record = record
+        )
+      }
+    )
+    return(svy)
+  }
+
+  if (is.null(get_data(svy))) {
+    return(.call)
+  }
+
+  out <- if (.copy) svy$shallow_clone() else svy
+
+  data <- get_data(svy) # Check against original data
+  missing <- setdiff(unname(map), names(data))
+  if (length(missing) > 0) {
+    stop(sprintf(
+      "Variables to rename not found: %s",
+      paste(missing, collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  # Apply change only if not lazy
+  if (!lazy) {
+    data.table::setnames(out$data, old = unname(map), new = names(map))
+  }
+
+  if (isTRUE(record)) {
+    step <- Step$new(
+      name = paste0(
+        "Rename: ",
+        paste(
+          sprintf("%s=%s", names(map), unname(map)),
+          collapse = ", "
+        )
+      ),
+      edition = get_edition(out),
+      survey_type = get_type(out),
+      type = "step_rename",
+      new_var = NULL,
+      exprs = list(mapping = map),
+      call = .call,
+      svy_before = NULL,
+      default_engine = get_engine(),
+      depends_on = NULL,
+      comment = comment,
+      bake = !lazy
+    )
+    out$add_step(step)
+  }
+  invisible(out)
+}
+
+#' Get type of step
+#' @param steps List of steps
+#' @return List of types
+#' @noRd
+
+get_type_step <- function(steps) {
+  if (length(steps) > 0) {
+    vapply(
+      X = seq_along(steps),
+      FUN = function(x) {
+        step <- steps[[x]]
+        step$type
+      },
+      FUN.VALUE = character(1)
+    )
+  } else {
+    NULL
+  }
+}
+
+#' Validate data during the step pipeline
+#'
+#' Creates a non-mutating step that checks data invariants when
+#' \code{\link{bake_steps}} is called. Each check is a logical expression
+#' evaluated row-wise against the survey data. If any row fails a check,
+#' the pipeline stops (or warns).
+#'
+#' @param svy A Survey or RotativePanelSurvey object
+#' @param ... Logical expressions evaluated against the data. Each must
+#'   return a logical vector with one value per row. Named expressions
+#'   use the name in error messages; unnamed expressions use the deparsed
+#'   code. Examples: \code{income > 0}, \code{!is.na(age)},
+#'   \code{sex \%in\% c(1, 2)}.
+#' @param .action What to do when a check fails: \code{"stop"} (default)
+#'   raises an error, \code{"warn"} issues a warning and continues.
+#' @param .min_n Minimum number of rows required. Checked before
+#'   row-level expressions.
+#' @param .copy Whether to operate on a copy (default:
+#'   \code{use_copy_default()})
+#' @param comment Descriptive text for the step for documentation
+#'   and traceability (default `"Validate step"`).
+#' @return The survey object with a validate step recorded (no data
+#'   mutation).
+#'
+#' @details
+#' **Lazy evaluation (default):** Like all steps, validation checks are
+#' recorded but **not executed** until \code{\link{bake_steps}} is called.
+#' This means \code{step_validate} can reference variables created by
+#' preceding \code{\link{step_compute}} calls.
+#'
+#' The validate step does **not** modify the data in any way. It only
+#' inspects the current state of the data.table and raises an error
+#' or warning if any check fails.
+#'
+#' @examples
+#' dt <- data.table::data.table(
+#'   id = 1:5, age = c(25, 30, 45, 50, 60),
+#'   income = c(1000, 2000, 3000, 4000, 5000), w = 1
+#' )
+#' svy <- Survey$new(
+#'   data = dt, edition = "2023", type = "test",
+#'   psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
+#' )
+#'
+#' # Validate that all ages are positive and income is not NA
+#' svy <- svy |>
+#'   step_validate(age > 0, !is.na(income), .min_n = 3) |>
+#'   bake_steps()
+#'
+#' @family steps
+#' @export
+step_validate <- function(
+  svy, ...,
+  .action = c("stop", "warn"),
+  .min_n = NULL,
+  .copy = use_copy_default(),
+  comment = "Validate step"
+) {
+  .action <- match.arg(.action)
+  .call <- canonicalize_step_call(match.call())
+
+  # Capture check expressions
+  checks <- as.list(substitute(list(...))[-1])
+
+  if (length(checks) == 0 && is.null(.min_n)) {
+    stop("step_validate requires at least one check expression or .min_n",
+      call. = FALSE
+    )
+  }
+
+  # Collect dependencies from all check expressions
+  dependencies <- unique(unlist(lapply(checks, all.vars)))
+
+  if (is(svy, "RotativePanelSurvey")) {
+    svy$implantation <- step_validate(
+      svy$implantation, ...,
+      .action = .action, .min_n = .min_n,
+      .copy = .copy, comment = comment
+    )
+    svy$follow_up <- lapply(svy$follow_up, function(fu) {
+      step_validate(fu, ...,
+        .action = .action, .min_n = .min_n,
+        .copy = .copy, comment = comment
+      )
+    })
+    return(svy)
+  }
+
+  out <- if (.copy) svy$shallow_clone() else svy
+
+  check_labels <- if (!is.null(names(checks))) {
+    ifelse(
+      nzchar(names(checks)),
+      names(checks),
+      vapply(checks, deparse1, character(1))
+    )
+  } else {
+    vapply(checks, deparse1, character(1))
+  }
+
+  step <- Step$new(
+    name = paste0("Validate: ", paste(check_labels, collapse = ", ")),
+    edition = get_edition(out),
+    survey_type = get_type(out),
+    type = "validate",
+    new_var = NULL,
+    exprs = list(
+      checks = checks,
+      .action = .action,
+      .min_n = .min_n
+    ),
+    call = .call,
+    svy_before = NULL,
+    default_engine = get_engine(),
+    depends_on = dependencies,
+    comment = comment,
+    bake = FALSE
+  )
+
+  out$add_step(step)
+  invisible(out)
+}
+
+
+#' Filter rows from survey data
+#'
+#' Creates a step that filters (subsets) rows from the survey data based
+#' on logical conditions. Multiple conditions are combined with AND.
+#'
+#' @param svy A [Survey] or [RotativePanelSurvey] object.
+#' @param ... Logical expressions evaluated against the data. Each must
+#'   return a logical vector. Multiple conditions are combined with AND.
+#' @param .by Optional grouping variable(s) for within-group filtering.
+#' @param .copy Whether to operate on a copy (default: [use_copy_default()]).
+#' @param comment Descriptive text for the step (default `"Filter step"`).
+#' @param .level For [RotativePanelSurvey], the level to apply
+#'   (default `"auto"`): `"implantation"`, `"follow_up"`, or `"auto"` (both).
+#'
+#' @return The survey object with rows filtered and the step recorded.
+#'
+#' @details
+#' **Lazy evaluation (default):** Like all steps, filter is recorded but
+#' **not executed** until [bake_steps()] is called.
+#'
+#' @examples
+#' svy <- Survey$new(
+#'   data = data.table::data.table(
+#'     id = 1:10, age = c(15, 25, 35, 45, 55, 65, 75, 20, 30, 40), w = 1
+#'   ),
+#'   edition = "2023", type = "test", psu = NULL,
+#'   engine = "data.table", weight = add_weight(annual = "w")
+#' )
+#' svy <- svy |>
+#'   step_filter(age >= 18) |>
+#'   bake_steps()
+#' nrow(get_data(svy))
+#'
+#' @family steps
+#' @export
+step_filter <- function(
+  svy, ...,
+  .by = NULL,
+  .copy = use_copy_default(),
+  comment = "Filter step",
+  .level = "auto"
+) {
+  .level <- match.arg(.level, c("auto", "implantation", "follow_up"))
+  .call <- canonicalize_step_call(match.call())
+
+  # Capture filter expressions
+  exprs <- as.list(substitute(list(...))[-1])
+
+  if (length(exprs) == 0) {
+    stop("step_filter requires at least one filter expression", call. = FALSE)
+  }
+
+  is_literal <- vapply(exprs, is.atomic, logical(1))
+  if (any(is_literal)) {
+    stop_input(
+      "step_filter", "...",
+      "must be logical expressions on survey variables, not literal values",
+      got = sprintf("`%s`", deparse1(exprs[[which(is_literal)[1]]]))
+    )
+  }
+
+  # Collect dependencies
+  dependencies <- unique(unlist(lapply(exprs, all.vars)))
+
+  if (is(svy, "RotativePanelSurvey")) {
+    return(step_filter_rotative(svy, ...,
+      .by = .by, .copy = .copy,
+      comment = comment, .level = .level, .call = .call
+    ))
+  }
+
+  out <- if (.copy) svy$shallow_clone() else svy
+
+  filter_labels <- vapply(exprs, deparse1, character(1))
+
+  step <- Step$new(
+    name = paste0("Filter: ", paste(filter_labels, collapse = " & ")),
+    edition = get_edition(out),
+    survey_type = get_type(out),
+    type = "filter",
+    new_var = NULL,
+    exprs = substitute(list(...)),
+    call = .call,
+    svy_before = NULL,
+    default_engine = get_engine(),
+    depends_on = dependencies,
+    comment = comment,
+    bake = FALSE,
+    by_vars = .by
+  )
+
+  out$add_step(step)
+  invisible(out)
+}
+
+
+#' @keywords internal
+#' @noRd
+step_filter_rotative <- function(
+  svy, ...,
+  .by = NULL,
+  .copy = use_copy_default(),
+  comment = "Filter step",
+  .level = "auto", .call
+) {
+  follow_up_processed <- svy$follow_up
+  implantation_processed <- svy$implantation
+
+  if (.level == "auto" || .level == "follow_up") {
+    follow_up_processed <- lapply(svy$follow_up, function(sub_svy) {
+      step_filter(sub_svy, ...,
+        .by = .by, .copy = .copy, comment = comment
+      )
+    })
+  }
+
+  if (.level == "auto" || .level == "implantation") {
+    implantation_processed <- step_filter(
+      svy$implantation, ...,
+      .by = .by, .copy = .copy, comment = comment
+    )
+  }
+
+  if (length(implantation_processed$steps) > 0) {
+    steps <- implantation_processed$steps
+  } else if (length(follow_up_processed) > 0) {
+    steps <- follow_up_processed[[1]]$steps
+  } else {
+    steps <- list()
+  }
+
+  if (.copy) {
+    result <- RotativePanelSurvey$new(
+      implantation = implantation_processed,
+      follow_up = follow_up_processed,
+      type = svy$type,
+      default_engine = "data.table",
+      steps = NULL, recipes = NULL,
+      workflows = NULL, design = NULL
+    )
+    result$steps <- steps
+    return(result)
+  } else {
+    svy$implantation <- implantation_processed
+    svy$follow_up <- follow_up_processed
+    svy$steps <- steps
+    return(svy)
+  }
+}
+
+
+#' Resolve the default weight column of a survey
+#'
+#' Returns the first weight attached to the survey: the column name for
+#' simple designs, or the `$weight` entry for replicate designs.
+#' @param svy A Survey object
+#' @return Character scalar or NULL if the survey has no weights.
+#' @noRd
+#' @keywords internal
+default_weight_var <- function(svy) {
+  w <- svy$weight
+  if (is.null(w) || length(w) == 0) {
+    return(NULL)
+  }
+  first <- w[[1L]]
+  if (is.character(first)) first else first$weight
+}
+
+#' Direct weighted quantile
+#'
+#' Right-continuous inverse of the weighted ECDF:
+#' `inf{x : F_w(x) >= p}`. Matches `survey::svyquantile()` with
+#' `qrule = "math"` and, for integer weights, `quantile(rep(x, w), type = 1)`,
+#' without expanding the weights (O(n log n) instead of O(sum(w))).
+#' @param x Numeric vector.
+#' @param w Numeric vector of weights (same length as `x`).
+#' @param probs Numeric vector of probabilities in (0, 1).
+#' @return Numeric vector of quantiles, one per element of `probs`.
+#' @noRd
+#' @keywords internal
+weighted_quantile <- function(x, w, probs) {
+  keep <- !is.na(x) & !is.na(w) & w > 0
+  x <- x[keep]
+  w <- w[keep]
+  if (length(x) == 0) {
+    return(rep(NA_real_, length(probs)))
+  }
+  ord <- order(x)
+  x <- x[ord]
+  cw <- cumsum(w[ord]) / sum(w)
+  # cumsum accumulates floating point error, so p can land just above
+  # the exact ECDF jump: compare with a small tolerance
+  eps <- sqrt(.Machine$double.eps)
+  vapply(
+    probs,
+    function(p) x[which(cw >= p - eps)[1L]],
+    numeric(1)
+  )
+}
+
+#' Weighted quantile groups (step)
+#'
+#' Creates a step that assigns each row to a weighted quantile group
+#' (quintiles, deciles, ...) of a numeric variable, e.g. income quintiles
+#' at the household level. Quantiles are computed directly on the weighted
+#' ECDF, without expanding the data by the weights.
+#'
+#' @param svy A [Survey] or [RotativePanelSurvey] object.
+#' @param new_var Name of the new group variable (unquoted or character).
+#' @param x Name of the numeric variable to split into quantile groups
+#'   (unquoted or character). Must be an existing column.
+#' @param n Number of groups (default `5`, i.e. quintiles). Use `10` for
+#'   deciles, `4` for quartiles, etc.
+#' @param weight Name of the weight column (unquoted or character).
+#'   Defaults to the survey's own weight.
+#' @param .by Optional character vector of grouping variables: quantile
+#'   breaks are computed independently within each group.
+#' @param .copy Whether to operate on a copy (default: [use_copy_default()]).
+#' @param comment Descriptive text for the step (default `"Quantile step"`).
+#' @param lazy Internal. Currently ignored: the groups are always computed
+#'   immediately and the step is recorded as executed.
+#' @param record Internal. Whether to record the step (default `TRUE`).
+#'
+#' @return The survey object with `new_var` added (integer codes `1..n`)
+#'   and the step recorded.
+#'
+#' @details
+#' **Execution model:** The quantile groups are computed immediately when
+#' the step is created and the step is recorded as already executed
+#' (`bake = TRUE`). Calling [bake_steps()] afterwards is safe: executed
+#' steps are skipped.
+#'
+#' **Algorithm:** The break for probability `p` is the right-continuous
+#' inverse of the weighted ECDF, `inf{x : F_w(x) >= p}`. This matches
+#' `survey::svyquantile(qrule = "math")` and, for integer weights,
+#' `quantile(rep(x, w), type = 1)`, but runs in `O(n log n)` instead of
+#' `O(sum(w))` memory. Rows are then assigned with intervals
+#' `(q[k-1], q[k]]`; rows with `NA` in `x` get `NA`. If breaks are tied
+#' (heavily discrete `x`), fewer than `n` groups can result.
+#'
+#' For household-level quantiles (one observation per household), collapse
+#' first with [step_collapse()] or compute on a household-level survey.
+#'
+#' @examples
+#' dt <- data.table::data.table(
+#'   id = 1:10, income = c(1:10) * 100, w = rep(1, 10)
+#' )
+#' svy <- Survey$new(
+#'   data = dt, edition = "2023", type = "test",
+#'   psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
+#' )
+#' svy <- step_quantile(svy, income_q, income, n = 5)
+#' get_data(svy)$income_q
+#'
+#' @seealso [step_collapse()] to collapse to household level before
+#'   computing household quantiles.
+#' @keywords step
+#' @family steps
+#' @export
+step_quantile <- function(
+  svy,
+  new_var,
+  x,
+  n = 5,
+  weight = NULL,
+  .by = NULL,
+  .copy = use_copy_default(),
+  comment = "Quantile step",
+  lazy = lazy_default(),
+  record = TRUE
+) {
+  .call <- canonicalize_step_call(match.call())
+
+  # Accept unquoted names or character strings (character is what
+  # bake_step() passes when re-baking a deserialized step)
+  new_var <- substitute(new_var)
+  if (!is.character(new_var)) {
+    new_var <- deparse1(new_var)
+  }
+  x <- substitute(x)
+  if (!is.character(x)) {
+    x <- deparse1(x)
+  }
+  weight <- substitute(weight)
+  if (!is.null(weight) && !is.character(weight)) {
+    weight <- deparse1(weight)
+  }
+
+  n_invalid <- !is.numeric(n) || length(n) != 1 || is.na(n) ||
+    n < 2 || n != as.integer(n)
+  if (n_invalid) {
+    stop("n must be a single integer >= 2", call. = FALSE)
+  }
+  n <- as.integer(n)
+
+  # RotativePanelSurvey: apply to implantation and each follow_up
+  if (methods::is(svy, "RotativePanelSurvey")) {
+    quantile_args <- list(
+      new_var = new_var, x = x, n = n, weight = weight,
+      .by = .by, .copy = .copy, comment = comment
+    )
+    svy$implantation <- do.call(
+      step_quantile, c(list(svy = svy$implantation), quantile_args)
+    )
+    svy$follow_up <- lapply(
+      svy$follow_up,
+      function(fu) do.call(step_quantile, c(list(svy = fu), quantile_args))
+    )
+    return(svy)
+  }
+
+  # If no data yet, return the call (pipeline build)
+  if (is.null(get_data(svy))) {
+    return(.call)
+  }
+
+  if (is.null(weight)) {
+    weight <- default_weight_var(svy)
+    if (is.null(weight)) {
+      stop(
+        "step_quantile: survey has no weight attached; ",
+        "pass `weight` explicitly",
+        call. = FALSE
+      )
+    }
+  }
+
+  out <- if (.copy) svy$shallow_clone() else svy
+  .data <- get_data(out)
+
+  needed <- unique(c(x, weight, .by))
+  missing_vars <- setdiff(needed, names(.data))
+  if (length(missing_vars) > 0) {
+    stop(
+      "step_quantile: variables not found in survey: ",
+      paste(missing_vars, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  if (!is.numeric(.data[[x]])) {
+    stop("step_quantile: `", x, "` must be numeric", call. = FALSE)
+  }
+
+  probs <- seq_len(n - 1L) / n
+  quantile_group <- function(xv, wv) {
+    breaks <- unique(weighted_quantile(xv, wv, probs))
+    breaks <- breaks[!is.na(breaks)]
+    if (length(breaks) == 0) {
+      return(rep(NA_integer_, length(xv)))
+    }
+    as.integer(cut(xv, breaks = c(-Inf, breaks, Inf), labels = FALSE))
+  }
+
+  if (is.null(.by)) {
+    data.table::set(
+      .data,
+      j = new_var,
+      value = quantile_group(.data[[x]], .data[[weight]])
+    )
+  } else {
+    .data[
+      ,
+      (new_var) := quantile_group(.SD[[1L]], .SD[[2L]]),
+      by = .by,
+      .SDcols = c(x, weight)
+    ]
+  }
+  out$set_data(.data)
+
+  if (isTRUE(record)) {
+    step <- Step$new(
+      name = paste0("Quantile (n=", n, "): ", new_var),
+      edition = get_edition(out),
+      survey_type = get_type(out),
+      type = "step_quantile",
+      new_var = new_var,
+      exprs = list(
+        new_var = new_var, x = x, n = n, weight = weight, .by = .by
+      ),
+      call = .call,
+      svy_before = NULL,
+      default_engine = get_engine(),
+      depends_on = needed,
+      comment = comment,
+      # the groups were already computed above: marking the step as baked
+      # prevents bake_steps() from recomputing them
+      bake = TRUE
+    )
+    out$add_step(step)
+  }
+  invisible(out)
+}
+
+
+#' Collapse survey data to one row per group (step)
+#'
+#' Creates a step that collapses the survey data to a single row per
+#' group, typically one row per household, so that estimations can be run
+#' at the group level with the group's weight (e.g. share of households
+#' receiving a transfer).
+#'
+#' @param svy A [Survey] or [RotativePanelSurvey] object.
+#' @param by Character vector of grouping variables that identify the
+#'   group (e.g. the household id).
+#' @param rule How to build the collapsed row (default `"first"`):
+#'   * `"first"`: keep the first row of each group as-is.
+#'   * `"max"` / `"min"`: aggregate every numeric/logical column with
+#'     `max()`/`min()` (`na.rm = TRUE`); non-numeric columns keep the
+#'     first value of the group.
+#' @param .copy Whether to operate on a copy (default: [use_copy_default()]).
+#' @param comment Descriptive text for the step (default `"Collapse step"`).
+#' @param lazy Internal. Currently ignored: the collapse is always applied
+#'   immediately and the step is recorded as executed.
+#' @param record Internal. Whether to record the step (default `TRUE`).
+#'
+#' @return The survey object with one row per `by` group and the step
+#'   recorded.
+#'
+#' @details
+#' **Execution model:** The collapse is applied immediately when the step
+#' is created and the step is recorded as already executed (`bake = TRUE`).
+#' Calling [bake_steps()] afterwards is safe: executed steps are skipped,
+#' so the data is never collapsed twice.
+#'
+#' **Interaction with the sampling design:** After collapsing, each row
+#' represents one group (household), so the weight column now acts as the
+#' *group* weight and subsequent estimations are at the group level. The
+#' design is invalidated and rebuilt from the collapsed data on the next
+#' estimation. In household surveys the person weight is constant within
+#' the household, so the collapsed weight is the household weight; if the
+#' weight varies within a group, a warning is issued because the collapsed
+#' weight is ambiguous (it is taken with `rule` like any other column).
+#'
+#' `rule = "max"` reproduces the person-to-household propagation pattern
+#' ("order decreasing + distinct by household id"): a dummy that is 1 for
+#' any household member becomes 1 in the collapsed household row.
+#'
+#' @examples
+#' dt <- data.table::data.table(
+#'   hh = c(1, 1, 2, 2, 3), person = 1:5,
+#'   receives = c(0, 1, 0, 0, 1), w = c(2, 2, 3, 3, 1)
+#' )
+#' svy <- Survey$new(
+#'   data = dt, edition = "2023", type = "test",
+#'   psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
+#' )
+#' hh_svy <- step_collapse(svy, by = "hh", rule = "max")
+#' get_data(hh_svy) # one row per household, receives = max over members
+#'
+#' @seealso [step_quantile()] for weighted quantile groups (e.g. household
+#'   income quintiles after collapsing).
+#' @keywords step
+#' @family steps
+#' @export
+step_collapse <- function(
+  svy,
+  by,
+  rule = c("first", "max", "min"),
+  .copy = use_copy_default(),
+  comment = "Collapse step",
+  lazy = lazy_default(),
+  record = TRUE
+) {
+  .call <- canonicalize_step_call(match.call())
+  rule <- match.arg(rule)
+
+  if (!is.character(by) || length(by) == 0) {
+    stop("by must be a non-empty character vector", call. = FALSE)
+  }
+
+  # RotativePanelSurvey: apply to implantation and each follow_up
+  if (methods::is(svy, "RotativePanelSurvey")) {
+    svy$implantation <- step_collapse(
+      svy = svy$implantation, by = by, rule = rule,
+      .copy = .copy, comment = comment
+    )
+    svy$follow_up <- lapply(
+      svy$follow_up,
+      function(fu) {
+        step_collapse(fu, by = by, rule = rule, .copy = .copy, comment = comment)
+      }
+    )
+    return(svy)
+  }
+
+  # If no data yet, return the call (pipeline build)
+  if (is.null(get_data(svy))) {
+    return(.call)
+  }
+
+  out <- if (.copy) svy$shallow_clone() else svy
+  .data <- get_data(out)
+
+  missing_vars <- setdiff(by, names(.data))
+  if (length(missing_vars) > 0) {
+    stop(
+      "step_collapse: grouping variables not found in survey: ",
+      paste(missing_vars, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  # The collapsed weight is only well-defined if the weight is constant
+  # within each group (the usual case for household weights)
+  weight_col <- default_weight_var(out)
+  if (!is.null(weight_col) && weight_col %in% names(.data)) {
+    varies <- .data[
+      ,
+      list(.varies = data.table::uniqueN(.SD[[1L]]) > 1L),
+      by = by,
+      .SDcols = weight_col
+    ][[".varies"]]
+    if (any(varies)) {
+      warning(
+        "step_collapse: weight '", weight_col, "' varies within some ",
+        "groups; the collapsed weight is taken with rule = '", rule,
+        "' and may not be a valid group weight",
+        call. = FALSE
+      )
+    }
+  }
+
+  if (rule == "first") {
+    collapsed <- unique(.data, by = by)
+  } else {
+    agg_fun <- match.fun(rule)
+    agg_one <- function(v) {
+      if (is.numeric(v) || is.logical(v)) {
+        if (all(is.na(v))) v[1L] else agg_fun(v, na.rm = TRUE)
+      } else {
+        v[1L]
+      }
+    }
+    collapsed <- .data[, lapply(.SD, agg_one), by = by]
+  }
+
+  out$set_data(collapsed)
+  # Rows changed: the design must be rebuilt from the collapsed data
+  out$design_initialized <- FALSE
+
+  if (isTRUE(record)) {
+    step <- Step$new(
+      name = paste0(
+        "Collapse (", rule, "): ", paste(by, collapse = ", ")
+      ),
+      edition = get_edition(out),
+      survey_type = get_type(out),
+      type = "step_collapse",
+      new_var = NULL,
+      exprs = list(by = by, rule = rule),
+      call = .call,
+      svy_before = NULL,
+      default_engine = get_engine(),
+      depends_on = by,
+      comment = comment,
+      # the collapse already ran above: marking the step as baked
+      # prevents bake_steps() from collapsing twice
+      bake = TRUE
+    )
+    out$add_step(step)
+  }
+  invisible(out)
+}
+
+
+#' View graph
+#' @param svy Survey object
+#' @param init_step Initial step label (default: "Load survey")
+#' @return A visNetwork interactive graph of the survey processing steps.
+#' @keywords survey
+#' @keywords step
+#' @examples
+#' \donttest{
+#' dt <- data.table::data.table(
+#'   id = 1:5, age = c(25, 30, 45, 50, 60),
+#'   w = rep(1, 5)
+#' )
+#' svy <- Survey$new(
+#'   data = dt, edition = "2023", type = "ech",
+#'   psu = NULL, engine = "data.table",
+#'   weight = add_weight(annual = "w")
+#' )
+#' svy <- step_compute(svy, age2 = age * 2)
+#' view_graph(svy)
+#' }
+#' @family steps
+#' @export
+view_graph <- function(svy, init_step = "Load survey") {
+  steps <- get_steps(svy)
+  steps_type <- get_type_step(steps)
+  formulas <- get_formulas(steps)
+  comments <- get_comments(steps)
+
+  if (!requireNamespace("visNetwork", quietly = TRUE)) {
+    stop(
+      "Package 'visNetwork' is required. ",
+      "Install it with: install.packages('visNetwork')",
+      call. = FALSE
+    )
+  }
+  if (!requireNamespace("htmltools", quietly = TRUE)) {
+    stop(
+      "Package 'htmltools' is required. ",
+      "Install it with: install.packages('htmltools')",
+      call. = FALSE
+    )
+  }
+
+  # ── Color palette (aligned with Shiny Recipe Explorer) ──
+  palette <- list(
+    primary    = "#2C3E50",
+    compute    = "#3498db",
+    recode     = "#9b59b6",
+    join       = "#1abc9c",
+    remove     = "#e74c3c",
+    rename     = "#e67e22",
+    validate   = "#27ae60",
+    filter     = "#f39c12",
+    quantile   = "#16a085",
+    collapse   = "#34495e",
+    dataframe  = "#95a5a6",
+    background = "#f8f9fa",
+    edge       = "#bdc3c7",
+    edge_join  = "#1abc9c"
+  )
+
+  # ── Tooltip builder ──
+  create_title <- function(comment, formula) {
+    mapply(function(c, f) {
+      paste0(
+        "<div style='font-family: ",
+        "system-ui, -apple-system, sans-serif; ",
+        "padding: 10px 14px; ",
+        "max-width: 340px;'>",
+        "<div style='font-weight: 700; ",
+        "font-size: 13px; color: ",
+        palette$primary, "; ",
+        "margin-bottom: 6px; ",
+        "border-bottom: 2px solid #eee; ",
+        "padding-bottom: 6px;'>",
+        htmltools::htmlEscape(c), "</div>",
+        "<div style='font-family: ",
+        "SFMono-Regular, Consolas, monospace; ",
+        "font-size: 11px; ",
+        "color: #6c757d; background: ",
+        palette$background,
+        "; padding: 8px 10px; ",
+        "border-radius: 6px; ",
+        "line-height: 1.5; ",
+        "white-space: pre-wrap;'>",
+        htmltools::htmlEscape(f),
+        "</div></div>"
+      )
+    }, comment, formula, USE.NAMES = FALSE)
+  }
+
+  # ── Survey info tooltip ──
+  survey_tooltip <- function(svy_obj, label_prefix = "") {
+    svy_type <- get_type(svy_obj)
+    svy_edition <- get_edition(svy_obj)
+    svy_weight <- get_info_weight(svy_obj)
+    paste0(
+      "<div style='font-family: ",
+      "system-ui, -apple-system, sans-serif; ",
+      "padding: 12px 16px; ",
+      "max-width: 300px;'>",
+      "<div style='font-weight: 800; ",
+      "font-size: 14px; color: ",
+      palette$primary, "; ",
+      "margin-bottom: 8px;'>",
+      label_prefix, "Survey</div>",
+      "<table style='font-size: 12px; ",
+      "color: #555; ",
+      "border-collapse: collapse;'>",
+      "<tr><td style='font-weight:600; ",
+      "padding: 3px 12px 3px 0; color:",
+      palette$primary, ";'>Type</td>",
+      "<td style='padding:3px 0;'>",
+      htmltools::htmlEscape(svy_type),
+      "</td></tr>",
+      "<tr><td style='font-weight:600; ",
+      "padding: 3px 12px 3px 0; color:",
+      palette$primary, ";'>Edition</td>",
+      "<td style='padding:3px 0;'>",
+      htmltools::htmlEscape(svy_edition),
+      "</td></tr>",
+      "<tr><td style='font-weight:600; ",
+      "padding: 3px 12px 3px 0; color:",
+      palette$primary, ";'>Weight</td>",
+      "<td style='padding:3px 0;'>",
+      htmltools::htmlEscape(svy_weight),
+      "</td></tr>",
+      "</table></div>"
+    )
+  }
+
+  # ── Group color helper ──
+  step_color <- function(type) {
+    switch(type,
+      "compute" = palette$compute,
+      "recode" = palette$recode,
+      "step_join" = palette$join,
+      "step_remove" = palette$remove,
+      "step_rename" = palette$rename,
+      "validate" = palette$validate,
+      "filter" = palette$filter,
+      "step_quantile" = palette$quantile,
+      "step_collapse" = palette$collapse,
+      "dataframe" = palette$dataframe,
+      "Load survey" = palette$primary,
+      palette$primary
+    )
+  }
+
+  # ── Initial node ──
+  if (init_step == "Load survey") {
+    init_label <- "Load survey"
+    init_title <- survey_tooltip(svy)
+  } else {
+    init_label <- init_step
+    init_title <- init_step
+  }
+
+  nodes <- data.frame(
+    id = 1,
+    label = init_label,
+    title = init_title,
+    group = "Load survey",
+    stringsAsFactors = FALSE
+  )
+  edges <- data.frame(
+    from = integer(),
+    to = integer(),
+    stringsAsFactors = FALSE
+  )
+
+  if (length(steps) > 0) {
+    node_ids <- 2:(length(steps) + 1)
+    nodes <- rbind(
+      nodes,
+      data.frame(
+        id = node_ids,
+        label = names(steps),
+        title = create_title(comments, formulas),
+        group = steps_type,
+        stringsAsFactors = FALSE
+      )
+    )
+    edges <- rbind(
+      edges,
+      data.frame(from = seq_along(steps), to = seq_along(steps) + 1L)
+    )
+  }
+
+  # ── Process joins ──
+  extra_nodes_list <- list()
+  extra_edges_list <- list()
+  node_id_counter <- nrow(nodes)
+
+  if (length(steps) > 0) {
+    for (i in seq_along(steps)) {
+      step <- steps[[i]]
+      current_step_node_id <- i + 1
+
+      if (step$type == "step_join") {
+        rhs <- step$exprs$x
+
+        if (methods::is(rhs, "Survey")) {
+          rhs_steps <- get_steps(rhs)
+          rhs_steps_type <- get_type_step(rhs_steps)
+          rhs_formulas <- get_formulas(rhs_steps)
+          rhs_comments <- get_comments(rhs_steps)
+
+          node_id_counter <- node_id_counter + 1
+          rhs_init_node_id <- node_id_counter
+
+          extra_nodes_list[[
+            length(extra_nodes_list) + 1
+          ]] <- data.frame(
+            id = rhs_init_node_id,
+            label = "Load survey (join)",
+            title = survey_tooltip(
+              rhs, "Join "
+            ),
+            group = "Load survey",
+            stringsAsFactors = FALSE
+          )
+
+          prev_rhs_node_id <- rhs_init_node_id
+
+          if (length(rhs_steps) > 0) {
+            for (j in seq_along(rhs_steps)) {
+              node_id_counter <- node_id_counter + 1
+
+              extra_nodes_list[[
+                length(extra_nodes_list) + 1
+              ]] <- data.frame(
+                id = node_id_counter,
+                label = names(rhs_steps)[j],
+                title = create_title(
+                  rhs_comments[j],
+                  rhs_formulas[j]
+                ),
+                group = rhs_steps_type[j],
+                stringsAsFactors = FALSE
+              )
+
+              extra_edges_list[[
+                length(extra_edges_list) + 1
+              ]] <- data.frame(
+                from = prev_rhs_node_id,
+                to = node_id_counter
+              )
+              prev_rhs_node_id <- node_id_counter
+            }
+          }
+
+          extra_edges_list[[
+            length(extra_edges_list) + 1
+          ]] <- data.frame(
+            from = prev_rhs_node_id,
+            to = current_step_node_id
+          )
+        } else if (is.data.frame(rhs)) {
+          node_id_counter <- node_id_counter + 1
+          df_node_id <- node_id_counter
+          df_name <- deparse(step$call$x)
+
+          extra_nodes_list[[
+            length(extra_nodes_list) + 1
+          ]] <- data.frame(
+            id = df_node_id,
+            label = paste("Data:", df_name),
+            title = paste0(
+              "<div style='font-family: ",
+              "system-ui, sans-serif; ",
+              "padding: 10px 14px;'>",
+              "<div style='font-weight: 700; ",
+              "color: ",
+              palette$primary,
+              ";'>External data.frame</div>",
+              "<div style='font-size: 12px; ",
+              "color: #6c757d; ",
+              "margin-top: 4px;'>",
+              htmltools::htmlEscape(df_name),
+              "</div></div>"
+            ),
+            group = "dataframe",
+            stringsAsFactors = FALSE
+          )
+
+          extra_edges_list[[
+            length(extra_edges_list) + 1
+          ]] <- data.frame(
+            from = df_node_id,
+            to = current_step_node_id
+          )
+        }
+      }
+    }
+  }
+
+  if (length(extra_nodes_list) > 0) {
+    nodes <- rbind(nodes, do.call(rbind, extra_nodes_list))
+  }
+  if (length(extra_edges_list) > 0) {
+    edges <- rbind(edges, do.call(rbind, extra_edges_list))
+  }
+
+  edges <- edges[!is.na(edges$to), ]
+
+  # ── Build visNetwork ──
+  visNetwork::visNetwork(
+    nodes = nodes,
+    edges = edges,
+    height = "600px",
+    width = "100%",
+    background = palette$background
+  ) |>
+    # ── Node groups ──
+    visNetwork::visGroups(
+      groupname = "Load survey",
+      shape = "icon",
+      icon = list(
+        code = "f1c0", size = 60,
+        color = palette$primary
+      ),
+      font = list(
+        size = 16, color = palette$primary,
+        face = "bold", multi = TRUE
+      ),
+      shadow = list(
+        enabled = TRUE, size = 8,
+        x = 2, y = 2,
+        color = "rgba(44,62,80,.15)"
+      )
+    ) |>
+    visNetwork::visGroups(
+      groupname = "compute",
+      shape = "icon",
+      icon = list(
+        code = "f1ec", size = 50,
+        color = palette$compute
+      ),
+      font = list(
+        size = 14, color = "#2c3e50",
+        face = "bold"
+      ),
+      shadow = list(
+        enabled = TRUE, size = 6,
+        x = 2, y = 2,
+        color = "rgba(52,152,219,.2)"
+      )
+    ) |>
+    visNetwork::visGroups(
+      groupname = "recode",
+      shape = "icon",
+      icon = list(
+        code = "f0e8", size = 50,
+        color = palette$recode
+      ),
+      font = list(
+        size = 14, color = "#2c3e50",
+        face = "bold"
+      ),
+      shadow = list(
+        enabled = TRUE, size = 6,
+        x = 2, y = 2,
+        color = "rgba(155,89,182,.2)"
+      )
+    ) |>
+    visNetwork::visGroups(
+      groupname = "step_join",
+      shape = "icon",
+      icon = list(
+        code = "f0c1", size = 50,
+        color = palette$join
+      ),
+      font = list(
+        size = 14, color = "#2c3e50",
+        face = "bold"
+      ),
+      shadow = list(
+        enabled = TRUE, size = 6,
+        x = 2, y = 2,
+        color = "rgba(26,188,156,.2)"
+      )
+    ) |>
+    visNetwork::visGroups(
+      groupname = "step_remove",
+      shape = "icon",
+      icon = list(
+        code = "f1f8", size = 50,
+        color = palette$remove
+      ),
+      font = list(
+        size = 14, color = "#2c3e50",
+        face = "bold"
+      ),
+      shadow = list(
+        enabled = TRUE, size = 6,
+        x = 2, y = 2,
+        color = "rgba(231,76,60,.2)"
+      )
+    ) |>
+    visNetwork::visGroups(
+      groupname = "step_rename",
+      shape = "icon",
+      icon = list(
+        code = "f044", size = 50,
+        color = palette$rename
+      ),
+      font = list(
+        size = 14, color = "#2c3e50",
+        face = "bold"
+      ),
+      shadow = list(
+        enabled = TRUE, size = 6,
+        x = 2, y = 2,
+        color = "rgba(230,126,34,.2)"
+      )
+    ) |>
+    visNetwork::visGroups(
+      groupname = "validate",
+      shape = "icon",
+      icon = list(
+        code = "f058", size = 50,
+        color = palette$validate
+      ),
+      font = list(
+        size = 14, color = "#2c3e50",
+        face = "bold"
+      ),
+      shadow = list(
+        enabled = TRUE, size = 6,
+        x = 2, y = 2,
+        color = "rgba(39,174,96,.2)"
+      )
+    ) |>
+    visNetwork::visGroups(
+      groupname = "dataframe",
+      shape = "icon",
+      icon = list(
+        code = "f0ce", size = 50,
+        color = palette$dataframe
+      ),
+      font = list(
+        size = 14, color = "#2c3e50"
+      ),
+      shadow = list(
+        enabled = TRUE, size = 6,
+        x = 2, y = 2,
+        color = "rgba(149,165,166,.2)"
+      )
+    ) |>
+    visNetwork::addFontAwesome() |>
+    visNetwork::visEdges(
+      arrows = list(
+        to = list(
+          enabled = TRUE,
+          scaleFactor = 0.7,
+          type = "arrow"
+        )
+      ),
+      color = list(
+        color = palette$edge,
+        highlight = palette$compute,
+        hover = palette$compute
+      ),
+      width = 2,
+      smooth = list(
+        enabled = TRUE,
+        type = "curvedCW",
+        roundness = 0.1
+      )
+    ) |>
+    visNetwork::visHierarchicalLayout(
+      direction = "LR",
+      levelSeparation = 220,
+      nodeSpacing = 140,
+      sortMethod = "directed"
+    ) |>
+    visNetwork::visInteraction(
+      hover = TRUE,
+      tooltipDelay = 100,
+      tooltipStyle = paste0(
+        "position: fixed; visibility: hidden; padding: 0; ",
+        "background: #fff; border-radius: 10px; ",
+        "box-shadow: 0 4px 20px rgba(0,0,0,.12); ",
+        "border: 1px solid #eee; ",
+        "pointer-events: none; z-index: 9999;"
+      ),
+      navigationButtons = TRUE,
+      keyboard = TRUE
+    ) |>
+    visNetwork::visOptions(
+      nodesIdSelection = list(
+        enabled = TRUE,
+        style = paste0(
+          "font-family: system-ui, ",
+          "sans-serif; font-size: 13px; ",
+          "padding: 6px 12px; ",
+          "border-radius: 8px; ",
+          "border: 1px solid #dee2e6; ",
+          "background: #fff; color: ",
+          palette$primary, ";"
+        )
+      ),
+      highlightNearest = list(
+        enabled = TRUE, degree = 1,
+        hover = TRUE
+      ),
+      clickToUse = FALSE
+    ) |>
+    visNetwork::visLegend(
+      width = 0.15,
+      position = "right",
+      main = list(
+        text = "Step types",
+        style = paste0(
+          "font-family: system-ui, ",
+          "sans-serif; font-weight: 700; ",
+          "font-size: 14px; color: ",
+          palette$primary, ";"
+        )
+      ),
+      zoom = FALSE
+    )
+}
+
+
+new_step <- function(id = 1, name, description,
+                     depends = NULL, type,
+                     new_var = NULL, ...) {
+  if (type == "recode") {
+    if (is.null(new_var)) {
+      stop("new_var is required for recode", call. = FALSE)
+    }
+  }
+
+  call <- do.call(
+    paste0(
+      "step_",
+      type
+    ),
+    args = list(
+      svy = survey_empty(),
+      new_var = new_var,
+      ...
+    )
+  )
+
+  list(
+    id = id,
+    name = name,
+    description = description,
+    depends = depends,
+    type = type,
+    new_var = new_var,
+    call = call
+  )
+}
+
+#' @title Find dependencies
+#' @description Find dependencies
+#' @param call_expr Call expression
+#' @param survey Survey
+#' @keywords internal
+#' @return List of dependencies
+#' @noRd
+#'
+find_dependencies <- function(call_expr, survey) {
+  dependencies <- character()
+
+  if (is.call(call_expr)) {
+    for (i in seq_along(call_expr)) {
+      result <- find_dependencies(call_expr[[i]], survey)
+      if (!is.null(result)) {
+        dependencies <- unique(c(dependencies, result))
+      }
+    }
+  } else if (is.name(call_expr)) {
+    expr_chr <- as.character(call_expr)
+    if (expr_chr %in% names(survey)) {
+      dependencies <- unique(c(dependencies, expr_chr))
+    }
+  }
+
+  return(unique(dependencies))
+}
