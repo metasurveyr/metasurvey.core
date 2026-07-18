@@ -45,14 +45,14 @@ test_that("RecipeUser creates institutional_member linked to institution", {
 })
 
 test_that("RecipeUser validates user_type values", {
-  expect_error(RecipeUser$new(name = "test", user_type = "admin"))
-  expect_error(RecipeUser$new(name = "test", user_type = ""))
-  expect_error(RecipeUser$new(name = "test", user_type = NULL))
+  expect_error(RecipeUser$new(name = "test", user_type = "admin"), class = "metasurvey_error_recipe")
+  expect_error(RecipeUser$new(name = "test", user_type = ""), class = "metasurvey_error_recipe")
+  expect_error(RecipeUser$new(name = "test", user_type = NULL), class = "metasurvey_error_recipe")
 })
 
 test_that("RecipeUser validates name is required", {
-  expect_error(RecipeUser$new(name = "", user_type = "individual"))
-  expect_error(RecipeUser$new(name = NULL, user_type = "individual"))
+  expect_error(RecipeUser$new(name = "", user_type = "individual"), class = "metasurvey_error_recipe")
+  expect_error(RecipeUser$new(name = NULL, user_type = "individual"), class = "metasurvey_error_recipe")
 })
 
 test_that("institutional_member requires institution", {

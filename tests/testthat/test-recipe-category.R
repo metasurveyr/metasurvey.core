@@ -16,14 +16,20 @@ test_that("RecipeCategory creates with parent hierarchy", {
 })
 
 test_that("RecipeCategory validates name is non-empty string", {
-  expect_error(RecipeCategory$new(name = "", description = "test"))
-  expect_error(RecipeCategory$new(name = NULL, description = "test"))
-  expect_error(RecipeCategory$new(name = 123, description = "test"))
+  expect_error(RecipeCategory$new(name = "", description = "test"), class = "metasurvey_error_recipe")
+  expect_error(RecipeCategory$new(name = NULL, description = "test"), class = "metasurvey_error_recipe")
+  expect_error(RecipeCategory$new(name = 123, description = "test"), class = "metasurvey_error_recipe")
 })
 
 test_that("RecipeCategory validates parent is RecipeCategory or NULL", {
-  expect_error(RecipeCategory$new(name = "test", description = "test", parent = "not_a_category"))
-  expect_error(RecipeCategory$new(name = "test", description = "test", parent = list()))
+  expect_error(
+    RecipeCategory$new(name = "test", description = "test", parent = "not_a_category"),
+    class = "metasurvey_error_recipe"
+  )
+  expect_error(
+    RecipeCategory$new(name = "test", description = "test", parent = list()),
+    class = "metasurvey_error_recipe"
+  )
 })
 
 test_that("is_subcategory_of checks hierarchy", {

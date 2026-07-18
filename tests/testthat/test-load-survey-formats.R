@@ -29,7 +29,7 @@ test_that("read_file loads RDS file", {
 })
 
 test_that("read_file errors for unsupported extension", {
-  expect_error(read_file("/fake/path/data.xyz"), "Unsupported file type")
+  expect_error(read_file("/fake/path/data.xyz"), class = "metasurvey_error_io")
 })
 
 # ── validate_recipe ────────────────────────────────────────────────────────────

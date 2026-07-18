@@ -24,8 +24,8 @@ test_that("register assigns id if missing", {
 
 test_that("register rejects non-Recipe objects", {
   reg <- RecipeRegistry$new()
-  expect_error(reg$register("not a recipe"))
-  expect_error(reg$register(list(name = "fake")))
+  expect_error(reg$register("not a recipe"), class = "metasurvey_error_recipe")
+  expect_error(reg$register(list(name = "fake")), class = "metasurvey_error_recipe")
 })
 
 test_that("unregister removes recipe by id", {

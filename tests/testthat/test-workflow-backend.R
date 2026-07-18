@@ -17,7 +17,7 @@ test_that("WorkflowBackend accepts 'mongo' as alias for 'api'", {
 })
 
 test_that("WorkflowBackend rejects invalid type", {
-  expect_error(WorkflowBackend$new("redis"), "Backend type must be one of")
+  expect_error(WorkflowBackend$new("redis"), class = "metasurvey_error_backend")
 })
 
 test_that("WorkflowBackend local loads existing file", {

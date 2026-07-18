@@ -56,9 +56,9 @@ test_that("reviewed certification accepts institution user", {
 })
 
 test_that("invalid level throws error", {
-  expect_error(RecipeCertification$new(level = "gold"))
-  expect_error(RecipeCertification$new(level = ""))
-  expect_error(RecipeCertification$new(level = NULL))
+  expect_error(RecipeCertification$new(level = "gold"), class = "metasurvey_error_recipe")
+  expect_error(RecipeCertification$new(level = ""), class = "metasurvey_error_recipe")
+  expect_error(RecipeCertification$new(level = NULL), class = "metasurvey_error_recipe")
 })
 
 test_that("certified_at is auto-set to current time", {

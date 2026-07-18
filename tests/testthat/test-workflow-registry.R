@@ -16,7 +16,7 @@ test_that("WorkflowRegistry register and list", {
 
 test_that("WorkflowRegistry rejects non-RecipeWorkflow", {
   reg <- WorkflowRegistry$new()
-  expect_error(reg$register(list(name = "fake")), "Can only register")
+  expect_error(reg$register(list(name = "fake")), class = "metasurvey_error_workflow")
 })
 
 test_that("WorkflowRegistry unregister", {
@@ -167,7 +167,7 @@ test_that("WorkflowBackend local find_by_recipe", {
 })
 
 test_that("WorkflowBackend invalid type", {
-  expect_error(WorkflowBackend$new("invalid"), "Backend type must be")
+  expect_error(WorkflowBackend$new("invalid"), class = "metasurvey_error_backend")
 })
 
 # --- Tidy API tests ---

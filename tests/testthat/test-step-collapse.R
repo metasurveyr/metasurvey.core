@@ -72,7 +72,7 @@ test_that("step_collapse warns when the weight varies within a group", {
   )
   expect_warning(
     step_collapse(svy, by = "hh", rule = "first"),
-    "varies within some groups"
+    class = "metasurvey_warning_step"
   )
 })
 
@@ -129,9 +129,9 @@ test_that("household-level estimation after collapse uses household weights", {
 
 test_that("step_collapse validates its inputs", {
   svy <- make_hh_survey()
-  expect_error(step_collapse(svy, by = character(0)), "non-empty character")
-  expect_error(step_collapse(svy, by = 1), "non-empty character")
-  expect_error(step_collapse(svy, by = "nope"), "not found")
+  expect_error(step_collapse(svy, by = character(0)), class = "metasurvey_error_step")
+  expect_error(step_collapse(svy, by = 1), class = "metasurvey_error_step")
+  expect_error(step_collapse(svy, by = "nope"), class = "metasurvey_error_step")
   expect_error(step_collapse(svy, by = "hh", rule = "sum"))
 })
 

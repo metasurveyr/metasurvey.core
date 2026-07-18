@@ -184,7 +184,7 @@ test_that("read_file reads a CSV file correctly", {
 })
 
 test_that("read_file stops on unsupported file type", {
-  expect_error(metasurvey.core:::read_file("file.xyz"), "Unsupported file type")
+  expect_error(metasurvey.core:::read_file("file.xyz"), class = "metasurvey_error_io")
 })
 
 test_that("read_file reads RDS file", {
@@ -204,7 +204,7 @@ test_that("read_file reads RDS file", {
 # --- load_survey errors ---
 
 test_that("load_survey errors when no args provided", {
-  expect_error(load_survey())
+  expect_error(load_survey(), class = "metasurvey_error_io")
 })
 
 # --- load_survey with bake=TRUE ---

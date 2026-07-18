@@ -252,7 +252,7 @@ test_that("re-baking legacy recode step with non-literal option fails loudly", {
   # no stored options and still pending execution
   s2$steps[[length(s2$steps)]]$recode_opts <- NULL
   s2$steps[[length(s2$steps)]]$bake <- FALSE
-  expect_error(bake_steps(s2), "not a literal")
+  expect_error(bake_steps(s2), class = "metasurvey_error_step")
 })
 
 # --- Mutation testing regression tests (issue #220) ---

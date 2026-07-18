@@ -168,7 +168,7 @@ test_that("validate_step errors when deps missing", {
     call = NULL, svy_before = NULL, default_engine = "data.table",
     depends_on = list("nonexistent_var")
   )
-  expect_error(metasurvey.core:::validate_step(s, step), "not in the survey")
+  expect_error(metasurvey.core:::validate_step(s, step), class = "metasurvey_error_step")
 })
 
 test_that("validate_step with empty deps returns TRUE", {
@@ -267,7 +267,7 @@ test_that("bake_steps_rotative bakes RotativePanelSurvey steps", {
 # --- bake_steps errors on invalid input ---
 
 test_that("bake_steps errors on non-Survey input", {
-  expect_error(bake_steps("not a survey"), "not a Survey")
+  expect_error(bake_steps("not a survey"), class = "metasurvey_error_step")
 })
 
 # --- bake_step with validation failure ---
@@ -318,7 +318,7 @@ test_that("bake_step errors on validation failure", {
   )
   expect_error(
     metasurvey.core:::bake_step(s, step),
-    "not in the survey"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -332,7 +332,7 @@ test_that("bake_step rejects invalid step type", {
   )
   expect_error(
     metasurvey.core:::bake_step(s, step),
-    "Invalid step type"
+    class = "metasurvey_error_step"
   )
 })
 

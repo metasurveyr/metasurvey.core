@@ -152,12 +152,12 @@ test_that("step_quantile can be re-baked from a lazy step (bake_step path)", {
 
 test_that("step_quantile validates its inputs", {
   svy <- make_test_survey(10)
-  expect_error(step_quantile(svy, xq, nope, n = 5), "not found")
-  expect_error(step_quantile(svy, xq, income, n = 1), "integer >= 2")
-  expect_error(step_quantile(svy, xq, income, n = 2.5), "integer >= 2")
+  expect_error(step_quantile(svy, xq, nope, n = 5), class = "metasurvey_error_step")
+  expect_error(step_quantile(svy, xq, income, n = 1), class = "metasurvey_error_step")
+  expect_error(step_quantile(svy, xq, income, n = 2.5), class = "metasurvey_error_step")
   expect_error(
     step_quantile(svy, xq, income, n = 5, weight = "nope"),
-    "not found"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -167,7 +167,7 @@ test_that("step_quantile errors on non-numeric x", {
     data = dt, edition = "2023", type = "test",
     psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
   )
-  expect_error(step_quantile(svy, xq, x, n = 2), "must be numeric")
+  expect_error(step_quantile(svy, xq, x, n = 2), class = "metasurvey_error_step")
 })
 
 test_that("step_quantile applies to RotativePanelSurvey levels", {
