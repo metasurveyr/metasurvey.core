@@ -311,21 +311,25 @@ workflow_panel <- function(survey, ...,
     parts[1] == "annual" &&
     parts[2] %in% c("mean_of_months", "monthly")
   if (!supported) {
-    stop(
-      "For RotativePanelSurvey objects, workflow() only supports ",
-      "estimation_type = \"annual:mean_of_months\" (annual estimate ",
-      "as the mean of the monthly estimates). For other estimations ",
-      "use extract_surveys() and pass the resulting surveys instead.",
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "For RotativePanelSurvey objects, workflow() only supports ",
+        "estimation_type = \"annual:mean_of_months\" (annual estimate ",
+        "as the mean of the monthly estimates). For other estimations ",
+        "use extract_surveys() and pass the resulting surveys instead."
+      ),
+      class = "metasurvey_error_workflow"
     )
   }
 
   follow_up <- unname(survey$follow_up)
   if (length(follow_up) == 0) {
-    stop(
-      "The RotativePanelSurvey has no follow-up surveys: the annual ",
-      "mean-of-months estimator needs monthly follow-ups.",
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "The RotativePanelSurvey has no follow-up surveys: the annual ",
+        "mean-of-months estimator needs monthly follow-ups."
+      ),
+      class = "metasurvey_error_workflow"
     )
   }
 
@@ -397,10 +401,12 @@ workflow_pool <- function(survey, ..., estimation_type = "monthly",
     .calls <- .calls[-which(names(.calls) == "rho")]
   }
   if ("R" %in% names(.calls)) {
-    warning(
-      "Argument 'R' is deprecated and ignored: the pooled standard ",
-      "error now uses 'rho' and the number of pooled surveys.",
-      call. = FALSE
+    msvy_warn(
+      paste0(
+        "Argument 'R' is deprecated and ignored: the pooled standard ",
+        "error now uses 'rho' and the number of pooled surveys."
+      ),
+      class = "metasurvey_warning_workflow"
     )
     .calls <- .calls[-which(names(.calls) == "R")]
   }

@@ -33,12 +33,12 @@ set_engine <- function(.engine = show_engines()) {
   } else if (.engine %in% .support_engine) {
     options(metasurvey.engine = .engine)
   } else {
-    stop(
+    msvy_abort(
       paste0(
         "Engine '", .engine, "' is not supported. Available: ",
         paste(.support_engine, collapse = ", ")
       ),
-      call. = FALSE
+      class = "metasurvey_error_engine"
     )
   }
 
@@ -48,10 +48,12 @@ set_engine <- function(.engine = show_engines()) {
 
   engine_name <- get_engine()
   if (!requireNamespace(engine_name, quietly = TRUE)) {
-    warning(
-      "Package '", engine_name, "' is required. ",
-      "Install it with: install.packages('", engine_name, "')",
-      call. = FALSE
+    msvy_warn(
+      paste0(
+        "Package '", engine_name, "' is required. ",
+        "Install it with: install.packages('", engine_name, "')"
+      ),
+      class = "metasurvey_warning_engine"
     )
   }
 

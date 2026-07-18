@@ -61,20 +61,26 @@ RecipeUser <- R6::R6Class(
                           institution = NULL, url = NULL, verified = FALSE,
                           review_status = "approved") {
       if (is.null(name) || !is.character(name) || nchar(name) == 0) {
-        stop("User name must be a non-empty character string", call. = FALSE)
+        msvy_abort(
+          "User name must be a non-empty character string",
+          class = "metasurvey_error_recipe"
+        )
       }
       valid_types <- c("individual", "institutional_member", "institution")
       if (is.null(user_type) || !is.character(user_type) || !(user_type %in% valid_types)) {
-        stop(
-          "user_type must be one of: ",
-          paste(valid_types, collapse = ", "),
-          call. = FALSE
+        msvy_abort(
+          paste0(
+            "user_type must be one of: ",
+            paste(valid_types, collapse = ", ")
+          ),
+          class = "metasurvey_error_recipe"
         )
       }
       if (user_type == "institutional_member") {
         if (is.null(institution) || !inherits(institution, "RecipeUser")) {
-          stop("institutional_member requires a valid RecipeUser institution",
-            call. = FALSE
+          msvy_abort(
+            "institutional_member requires a valid RecipeUser institution",
+            class = "metasurvey_error_recipe"
           )
         }
       }

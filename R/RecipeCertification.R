@@ -40,10 +40,12 @@ RecipeCertification <- R6::R6Class(
                           certified_at = NULL) {
       valid_levels <- c("community", "reviewed", "official")
       if (is.null(level) || !is.character(level) || !(level %in% valid_levels)) {
-        stop(
-          "level must be one of: ",
-          paste(valid_levels, collapse = ", "),
-          call. = FALSE
+        msvy_abort(
+          paste0(
+            "level must be one of: ",
+            paste(valid_levels, collapse = ", ")
+          ),
+          class = "metasurvey_error_recipe"
         )
       }
 
@@ -52,10 +54,12 @@ RecipeCertification <- R6::R6Class(
           is.null(certified_by) || !inherits(certified_by, "RecipeUser") ||
             certified_by$user_type != "institution"
         ) {
-          stop(
-            "official certification requires a ",
-            "RecipeUser of type 'institution'",
-            call. = FALSE
+          msvy_abort(
+            paste0(
+              "official certification requires a ",
+              "RecipeUser of type 'institution'"
+            ),
+            class = "metasurvey_error_recipe"
           )
         }
       }
@@ -66,11 +70,13 @@ RecipeCertification <- R6::R6Class(
             !certified_by$user_type %in%
               c("institutional_member", "institution")
         ) {
-          stop(
-            "reviewed certification requires a ",
-            "RecipeUser of type 'institutional_member' ",
-            "or 'institution'",
-            call. = FALSE
+          msvy_abort(
+            paste0(
+              "reviewed certification requires a ",
+              "RecipeUser of type 'institutional_member' ",
+              "or 'institution'"
+            ),
+            class = "metasurvey_error_recipe"
           )
         }
       }

@@ -132,9 +132,9 @@ load_survey <- function(
   if (
     path_null && svy_args_null
   ) {
-    stop(
+    msvy_abort(
       "Must provide either a file path or a survey type with edition",
-      call. = FALSE
+      class = "metasurvey_error_io"
     )
   }
 
@@ -266,9 +266,9 @@ load_panel_survey <- function(
   )
 
   if (length(names(svy_weight_follow_up)) > 1) {
-    stop(
+    msvy_abort(
       "The follow-up survey must have a single weight time pattern",
-      call. = FALSE
+      class = "metasurvey_error_io"
     )
   }
 
@@ -312,9 +312,9 @@ load_panel_survey <- function(
       FUN = function(x) {
         time_pattern <- extract_time_pattern(x)
         if (time_pattern$periodicity != "Monthly") {
-          stop(
+          msvy_abort(
             "The periodicity of the file is not monthly",
-            call. = FALSE
+            class = "metasurvey_error_io"
           )
         } else {
           return(
@@ -355,9 +355,9 @@ load_panel_survey <- function(
       FUN = function(x) {
         time_pattern <- extract_time_pattern(x)
         if (time_pattern$periodicity != "Monthly") {
-          stop(
+          msvy_abort(
             "The periodicity of the file is not monthly",
-            call. = FALSE
+            class = "metasurvey_error_io"
           )
         } else {
           return(
@@ -442,10 +442,12 @@ read_file <- function(file, .args = NULL, convert = FALSE) {
   if (convert) {
     if (.extension != ".csv" && !file.exists(.output_file)) {
       if (!requireNamespace("rio", quietly = TRUE)) {
-        stop(
-          "Package 'rio' is required. ",
-          "Install it with: install.packages('rio')",
-          call. = FALSE
+        msvy_abort(
+          paste0(
+            "Package 'rio' is required. ",
+            "Install it with: install.packages('rio')"
+          ),
+          class = "metasurvey_error_io"
         )
       }
       rio::convert(
@@ -464,16 +466,21 @@ read_file <- function(file, .args = NULL, convert = FALSE) {
     csv = list(package = "data.table", read_function = "fread"),
     xlsx = list(package = "openxlsx", read_function = "read.xlsx"),
     rds = list(package = "base", read_function = "readRDS"),
-    stop("Unsupported file type: ", .extension, call. = FALSE)
+    msvy_abort(
+      paste0("Unsupported file type: ", .extension),
+      class = "metasurvey_error_io"
+    )
   )
 
   if (!requireNamespace(.read_function$package, quietly = TRUE)) {
-    stop(
-      "Package '", .read_function$package,
-      "' is required to read .", .extension, " files. ",
-      "Please install it with: install.packages('",
-      .read_function$package, "')",
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "Package '", .read_function$package,
+        "' is required to read .", .extension, " files. ",
+        "Please install it with: install.packages('",
+        .read_function$package, "')"
+      ),
+      class = "metasurvey_error_io"
     )
   }
 

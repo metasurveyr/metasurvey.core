@@ -51,10 +51,16 @@ RecipeCategory <- R6::R6Class(
     #' @param parent RecipeCategory or NULL. Parent category.
     initialize = function(name, description, parent = NULL) {
       if (is.null(name) || !is.character(name) || nchar(name) == 0) {
-        stop("Category name must be a non-empty character string", call. = FALSE)
+        msvy_abort(
+          "Category name must be a non-empty character string",
+          class = "metasurvey_error_recipe"
+        )
       }
       if (!is.null(parent) && !inherits(parent, "RecipeCategory")) {
-        stop("parent must be a RecipeCategory object or NULL", call. = FALSE)
+        msvy_abort(
+          "parent must be a RecipeCategory object or NULL",
+          class = "metasurvey_error_recipe"
+        )
       }
       self$name <- name
       self$description <- description
@@ -129,10 +135,12 @@ RecipeCategory <- R6::R6Class(
     #' @return RecipeCategory object or NULL
     from_list = function(lst) {
       # Placeholder - actual implementation added via $set() below
-      stop(
-        "This method should be called as ",
-        "RecipeCategory$from_list(), not on an instance",
-        call. = FALSE
+      msvy_abort(
+        paste0(
+          "This method should be called as ",
+          "RecipeCategory$from_list(), not on an instance"
+        ),
+        class = "metasurvey_error_recipe"
       )
     }
   )

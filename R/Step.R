@@ -143,12 +143,12 @@ validate_step <- function(svy, step) {
   missing_vars <- depends_on[!depends_on %in% names_svy]
 
   if (length(missing_vars) > 0) {
-    stop(
+    msvy_abort(
       paste0(
         "The following variables are not in the survey: ",
         paste(missing_vars, collapse = ", ")
       ),
-      call. = FALSE
+      class = "metasurvey_error_step"
     )
   } else {
     return(TRUE)
@@ -208,11 +208,13 @@ bake_step <- function(svy, step, .copy = use_copy_default()) {
           args[[arg]] <- tryCatch(
             eval(val, baseenv()),
             error = function(e) {
-              stop(
-                "Cannot re-bake recode step '", step$name, "': argument `",
-                arg, "` (", deparse1(val), ") is not a literal and its ",
-                "value was not stored with the step.",
-                call. = FALSE
+              msvy_abort(
+                paste0(
+                  "Cannot re-bake recode step '", step$name, "': argument `",
+                  arg, "` (", deparse1(val), ") is not a literal and its ",
+                  "value was not stored with the step."
+                ),
+                class = "metasurvey_error_step"
               )
             }
           )
@@ -227,9 +229,12 @@ bake_step <- function(svy, step, .copy = use_copy_default()) {
     "step_quantile", "step_collapse"
   )
   if (!step$type %in% valid_types) {
-    stop("Invalid step type: '", step$type, "'. Must be one of: ",
-      paste(valid_types, collapse = ", "),
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "Invalid step type: '", step$type, "'. Must be one of: ",
+        paste(valid_types, collapse = ", ")
+      ),
+      class = "metasurvey_error_step"
     )
   }
 
@@ -289,9 +294,9 @@ bake_validate <- function(svy, step) {
         min_n, nrow(.data)
       )
       if (action == "warn") {
-        warning(msg, call. = FALSE)
+        msvy_warn(msg, class = "metasurvey_warning_step")
       } else {
-        stop(msg, call. = FALSE)
+        msvy_abort(msg, class = "metasurvey_error_step")
       }
     }
   }
@@ -301,10 +306,13 @@ bake_validate <- function(svy, step) {
   for (i in seq_along(checks)) {
     result <- eval(checks[[i]], .data, baseenv())
     if (!is.logical(result)) {
-      stop(sprintf(
-        "Validation check '%s' did not return a logical vector",
-        deparse1(checks[[i]])
-      ), call. = FALSE)
+      msvy_abort(
+        sprintf(
+          "Validation check '%s' did not return a logical vector",
+          deparse1(checks[[i]])
+        ),
+        class = "metasurvey_error_step"
+      )
     }
     n_fail <- sum(!result, na.rm = TRUE)
     # NA counts as failure
@@ -322,9 +330,9 @@ bake_validate <- function(svy, step) {
         label, n_fail, if (n_fail == 1) "" else "s"
       )
       if (action == "warn") {
-        warning(msg, call. = FALSE)
+        msvy_warn(msg, class = "metasurvey_warning_step")
       } else {
-        stop(msg, call. = FALSE)
+        msvy_abort(msg, class = "metasurvey_error_step")
       }
     }
   }
@@ -371,7 +379,10 @@ bake_steps <- function(svy) {
     return(bake_steps_rotative(svy))
   }
 
-  stop("The object is not a Survey or RotativePanelSurvey object", call. = FALSE)
+  msvy_abort(
+    "The object is not a Survey or RotativePanelSurvey object",
+    class = "metasurvey_error_step"
+  )
 }
 
 #' Bake steps survey rotative

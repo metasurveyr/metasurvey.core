@@ -224,10 +224,13 @@ Survey <- R6Class(
       both_set <- !is.null(self$type) && !is.null(recipe$survey_type) &&
         nzchar(self$type) && nzchar(recipe$survey_type)
       if (both_set && tolower(self$type) != tolower(recipe$survey_type)) {
-        stop(
-          "Recipe survey type mismatch: survey is '", self$type,
-          "' but recipe '", recipe$name, "' targets '", recipe$survey_type, "'",
-          call. = FALSE
+        msvy_abort(
+          paste0(
+            "Recipe survey type mismatch: survey is '", self$type,
+            "' but recipe '", recipe$name, "' targets '",
+            recipe$survey_type, "'"
+          ),
+          class = "metasurvey_error_recipe"
         )
       }
 
@@ -238,12 +241,14 @@ Survey <- R6Class(
         survey_vars <- names(self$data)
         missing_vars <- deps[!tolower(deps) %in% tolower(survey_vars)]
         if (length(missing_vars) > 0) {
-          warning(
-            "Recipe '", recipe$name,
-            "' depends on variables not present in survey: ",
-            paste(missing_vars, collapse = ", "),
-            ". Recipe added but bake_recipes() may fail.",
-            call. = FALSE
+          msvy_warn(
+            paste0(
+              "Recipe '", recipe$name,
+              "' depends on variables not present in survey: ",
+              paste(missing_vars, collapse = ", "),
+              ". Recipe added but bake_recipes() may fail."
+            ),
+            class = "metasurvey_warning_recipe"
           )
         }
       }
@@ -291,10 +296,12 @@ Survey <- R6Class(
 
         if (!is.null(strata_var) && !is.null(data)) {
           if (!strata_var %in% names(data)) {
-            stop(
-              "Strata variable '", strata_var,
-              "' not found in survey data",
-              call. = FALSE
+            msvy_abort(
+              paste0(
+                "Strata variable '", strata_var,
+                "' not found in survey data"
+              ),
+              class = "metasurvey_error_survey"
             )
           }
         }
@@ -357,7 +364,10 @@ Survey <- R6Class(
       data_now <- self$get_data()
 
       if (length(self$design) != length(weight_list)) {
-        warning("Design length mismatch, reinitializing design", call. = FALSE)
+        msvy_warn(
+          "Design length mismatch, reinitializing design",
+          class = "metasurvey_warning_survey"
+        )
         self$design_initialized <- FALSE
         self$ensure_design()
       }
@@ -440,8 +450,9 @@ survey_to_data_frame <- function(svy) {
 
 survey_to_tibble <- function(svy) {
   if (!requireNamespace("tibble", quietly = TRUE)) {
-    stop("Package 'tibble' required. Install with: install.packages('tibble')",
-      call. = FALSE
+    msvy_abort(
+      "Package 'tibble' required. Install with: install.packages('tibble')",
+      class = "metasurvey_error_survey"
     )
   }
   tibble::as_tibble(svy$get_data())
@@ -1151,11 +1162,13 @@ bake_recipes <- function(svy) {
       survey_vars <- names(eval_env$svy$data)
       missing_vars <- deps[!tolower(deps) %in% tolower(survey_vars)]
       if (length(missing_vars) > 0) {
-        stop(
-          "Cannot bake recipe '", recipe$name,
-          "': missing required variables: ",
-          paste(missing_vars, collapse = ", "),
-          call. = FALSE
+        msvy_abort(
+          paste0(
+            "Cannot bake recipe '", recipe$name,
+            "': missing required variables: ",
+            paste(missing_vars, collapse = ", ")
+          ),
+          class = "metasurvey_error_recipe"
         )
       }
 

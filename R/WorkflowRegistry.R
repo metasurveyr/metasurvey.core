@@ -19,7 +19,10 @@ WorkflowRegistry <- R6::R6Class(
     #' @param wf RecipeWorkflow object to register
     register = function(wf) {
       if (!inherits(wf, "RecipeWorkflow")) {
-        stop("Can only register RecipeWorkflow objects", call. = FALSE)
+        msvy_abort(
+          "Can only register RecipeWorkflow objects",
+          class = "metasurvey_error_workflow"
+        )
       }
       id <- as.character(wf$id)
       private$.workflows[[id]] <- wf

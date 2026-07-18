@@ -25,10 +25,12 @@ RecipeBackend <- R6::R6Class(
       if (type == "mongo") type <- "api"
       valid_types <- c("local", "api")
       if (!(type %in% valid_types)) {
-        stop(
-          "Backend type must be one of: ",
-          paste(valid_types, collapse = ", "),
-          call. = FALSE
+        msvy_abort(
+          paste0(
+            "Backend type must be one of: ",
+            paste(valid_types, collapse = ", ")
+          ),
+          class = "metasurvey_error_backend"
         )
       }
       self$type <- type

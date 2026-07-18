@@ -351,13 +351,13 @@ Recipe <- R6Class("Recipe",
       ]
 
       if (length(missing_vars) > 0) {
-        stop(
+        msvy_abort(
           sprintf(
             "Recipe '%s' requires variables not present in survey: %s",
             self$name,
             paste(missing_vars, collapse = ", ")
           ),
-          call. = FALSE
+          class = "metasurvey_error_recipe"
         )
       }
 
@@ -470,12 +470,12 @@ recipe <- function(...) {
   check_args <- sum(metadata_recipes_names %in% names(dots))
 
   if (!(check_args == length(metadata_recipes_names))) {
-    stop(
+    msvy_abort(
       paste0(
         "The recipe must have the following metadata: ",
         paste(metadata_recipe(), collapse = ", ")
       ),
-      call. = FALSE
+      class = "metasurvey_error_recipe"
     )
   }
 
@@ -663,9 +663,12 @@ read_recipe <- function(file) {
   steps <- tryCatch(
     decode_step(json_data$steps),
     error = function(e) {
-      warning("Failed to parse recipe steps: ", e$message,
-        ". Using raw strings as fallback.",
-        call. = FALSE
+      msvy_warn(
+        paste0(
+          "Failed to parse recipe steps: ", e$message,
+          ". Using raw strings as fallback."
+        ),
+        class = "metasurvey_warning_recipe"
       )
       as.list(json_data$steps)
     }
@@ -874,13 +877,13 @@ get_recipe <- function(
 ) {
   # Check if recipes should be skipped (offline mode)
   if (isTRUE(getOption("metasurvey.skip_recipes", FALSE))) {
-    warning(
+    msvy_warn(
       paste0(
         "Recipe API is disabled ",
         "(metasurvey.skip_recipes = TRUE). ",
         "Returning NULL."
       ),
-      call. = FALSE
+      class = "metasurvey_warning_recipe"
     )
     return(NULL)
   }
@@ -907,14 +910,18 @@ get_recipe <- function(
       recipes
     },
     error = function(e) {
-      warning(
-        "Failed to retrieve recipes from backend: ", e$message, "\n",
-        "  You can:\n",
-        "    - Work without recipes by not calling get_recipe()\n",
-        "    - Set options(metasurvey.skip_recipes",
-        " = TRUE) to disable recipe lookups\n",
-        "    - Configure a backend with set_backend() (local or api)",
-        call. = FALSE
+      msvy_warn(
+        c(
+          paste0("Failed to retrieve recipes from backend: ", e$message),
+          "i" = "You can:",
+          "*" = "Work without recipes by not calling get_recipe()",
+          "*" = paste0(
+            "Set options(metasurvey.skip_recipes = TRUE) ",
+            "to disable recipe lookups"
+          ),
+          "*" = "Configure a backend with set_backend() (local or api)"
+        ),
+        class = "metasurvey_warning_backend"
       )
       return(NULL)
     }
@@ -1015,7 +1022,10 @@ get_distinct_recipes <- function(recipe) {
 
 publish_recipe <- function(recipe) {
   if (!inherits(recipe, "Recipe")) {
-    stop("recipe must be a Recipe object", call. = FALSE)
+    msvy_abort(
+      "recipe must be a Recipe object",
+      class = "metasurvey_error_recipe"
+    )
   }
   get_backend()$publish(recipe)
   invisible(recipe)

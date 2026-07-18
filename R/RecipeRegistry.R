@@ -19,7 +19,10 @@ RecipeRegistry <- R6::R6Class(
     #' @param recipe Recipe object to register
     register = function(recipe) {
       if (!inherits(recipe, "Recipe")) {
-        stop("Can only register Recipe objects", call. = FALSE)
+        msvy_abort(
+          "Can only register Recipe objects",
+          class = "metasurvey_error_recipe"
+        )
       }
       id <- as.character(recipe$id)
       private$.recipes[[id]] <- recipe

@@ -84,7 +84,10 @@ RotativePanelSurvey <- R6Class(
       )
 
       if (length(unique(follow_up_types)) > 1) {
-        stop("All follow-up surveys must have the same type", call. = FALSE)
+        msvy_abort(
+          "All follow-up surveys must have the same type",
+          class = "metasurvey_error_panel"
+        )
       }
 
       self$periodicity <- list(
@@ -275,11 +278,14 @@ extract_surveys <- function(RotativePanelSurvey,
                             biannual = NULL,
                             use.parallel = FALSE) {
   if (is.null(monthly) && is.null(annual) && is.null(quarterly) && is.null(biannual) && is.null(index)) {
-    warning(paste0(
-      "At least one interval argument must be ",
-      "different from NULL. ",
-      "Returning the implantation survey."
-    ), call. = FALSE)
+    msvy_warn(
+      paste0(
+        "At least one interval argument must be ",
+        "different from NULL. ",
+        "Returning the implantation survey."
+      ),
+      class = "metasurvey_warning_panel"
+    )
     annual <- 1
   }
 
@@ -287,10 +293,13 @@ extract_surveys <- function(RotativePanelSurvey,
     RotativePanelSurvey,
     "RotativePanelSurvey"
   )) {
-    stop(paste0(
-      "The `RotativeSurvey` argument must be an ",
-      "object of class `RotativePanelSurvey`"
-    ), call. = FALSE)
+    msvy_abort(
+      paste0(
+        "The `RotativeSurvey` argument must be an ",
+        "object of class `RotativePanelSurvey`"
+      ),
+      class = "metasurvey_error_panel"
+    )
   }
 
   follow_up <- RotativePanelSurvey$follow_up
@@ -329,10 +338,12 @@ extract_surveys <- function(RotativePanelSurvey,
 
   apply_func <- if (use.parallel) {
     if (!requireNamespace("parallel", quietly = TRUE)) {
-      stop(
-        "Package 'parallel' is required. ",
-        "Install it with: install.packages('parallel')",
-        call. = FALSE
+      msvy_abort(
+        paste0(
+          "Package 'parallel' is required. ",
+          "Install it with: install.packages('parallel')"
+        ),
+        class = "metasurvey_error_panel"
       )
     }
     parallel::mclapply
@@ -532,11 +543,14 @@ get_implantation <- function(RotativePanelSurvey) {
     RotativePanelSurvey,
     "RotativePanelSurvey"
   )) {
-    stop(paste0(
-      "The `RotativeSurvey` argument must be ",
-      "an object of class ",
-      "`RotativePanelSurvey`"
-    ))
+    msvy_abort(
+      paste0(
+        "The `RotativeSurvey` argument must be ",
+        "an object of class ",
+        "`RotativePanelSurvey`"
+      ),
+      class = "metasurvey_error_panel"
+    )
   }
 
   return(RotativePanelSurvey$implantation)
@@ -623,11 +637,14 @@ get_follow_up <- function(
     RotativePanelSurvey,
     "RotativePanelSurvey"
   )) {
-    stop(paste0(
-      "The `RotativeSurvey` argument must be ",
-      "an object of class ",
-      "`RotativePanelSurvey`"
-    ))
+    msvy_abort(
+      paste0(
+        "The `RotativeSurvey` argument must be ",
+        "an object of class ",
+        "`RotativePanelSurvey`"
+      ),
+      class = "metasurvey_error_panel"
+    )
   }
 
   return(RotativePanelSurvey$follow_up[index])
