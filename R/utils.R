@@ -317,31 +317,9 @@ set_use_copy <- function(use_copy) {
 }
 
 
-#' Get User
-#' @return User
-#' @keywords utils
-#' @keywords internal
-#' @noRd
-
-get_user <- function() {
-  user_key <- NULL
-
-  api_key <- getOption("metasurvey.api_key", default = NULL)
-
-  if (!is.null(api_key)) {
-    user_key <- "apiKey"
-  }
-
-  getOption(
-    "metasurvey.user",
-    default = NULL
-  ) %||% user_key %||% "public"
-}
-
-
-# Legacy Atlas direct-access functions were removed.
-# All API access now goes through api_client.R → plumber API.
-# See configure_api(), api_login(), api_list_recipes(), etc.
+# Credentials and API access live in the provider packages
+# (metasurvey.explorer.backend); core reaches the remote backend only
+# through the .backend_api_call() hook. See backend-provider.R.
 
 
 #' Lazy processing
