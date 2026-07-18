@@ -10,6 +10,11 @@
 
 #' Signal an input validation error
 #'
+#' Signals a condition of class `metasurvey_input_error` /
+#' `metasurvey_error`. Uses a base [errorCondition()] (not cli) so the
+#' message format stays byte-identical: cli would rewrap and collapse
+#' whitespace.
+#'
 #' @param fn Name of the user-facing function (without parentheses).
 #' @param arg Name of the offending argument.
 #' @param must Requirement description, continuing "`arg` in `fn()` ...".
@@ -20,7 +25,10 @@ stop_input <- function(fn, arg, must, got = NULL) {
   if (!is.null(got)) {
     msg <- sprintf("%s; got %s", msg, got)
   }
-  stop(msg, call. = FALSE)
+  stop(errorCondition(
+    msg,
+    class = c("metasurvey_input_error", "metasurvey_error")
+  ))
 }
 
 #' Describe the class of an object for error messages
