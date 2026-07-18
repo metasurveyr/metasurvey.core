@@ -809,54 +809,29 @@ read_recipe <- function(file) {
 #' must match for a recipe to be returned.
 #'
 #' @examples
-#' \dontrun{
-#' # Get specific recipe for ECH 2023
-#' ech_recipe <- get_recipe(
-#'   svy_type = "ech",
-#'   svy_edition = "2023"
+#' # Query a local backend (works offline)
+#' old <- set_backend("local", path = tempfile(fileext = ".json"))
+#'
+#' r <- Recipe$new(
+#'   name = "labor_market", edition = "2023", survey_type = "ech",
+#'   default_engine = "data.table", depends_on = list(),
+#'   user = "demo", description = "Example recipe",
+#'   steps = list("step_compute(., active = e27 >= 14)"),
+#'   id = "r_demo"
+#' )
+#' publish_recipe(r)
+#'
+#' # Get recipes for ECH 2023
+#' ech_recipes <- get_recipe(svy_type = "ech", svy_edition = "2023")
+#'
+#' # Get a single recipe
+#' one_recipe <- get_recipe(
+#'   svy_type = "ech", svy_edition = "2023",
+#'   allowMultiple = FALSE
 #' )
 #'
-#' # Recipe for specific topic
-#' labor_recipe <- get_recipe(
-#'   svy_type = "ech",
-#'   svy_edition = "2023",
-#'   topic = "labor_market"
-#' )
-#'
-#' # Allow multiple recipes
-#' available_recipes <- get_recipe(
-#'   svy_type = "eaii",
-#'   svy_edition = "2019-2021",
-#'   allowMultiple = TRUE
-#' )
-#'
-#' # Use recipe in load_survey
-#' ech_with_recipe <- load_survey(
-#'   path = "ech_2023.dta",
-#'   svy_type = "ech",
-#'   svy_edition = "2023",
-#'   recipes = get_recipe("ech", "2023"),
-#'   bake = TRUE
-#' )
-#'
-#' # Working offline - don't use recipes
-#' ech_offline <- load_survey(
-#'   path = "ech_2023.dta",
-#'   svy_type = "ech",
-#'   svy_edition = "2023",
-#'   svy_weight = add_weight(annual = "PESOANO")
-#' )
-#'
-#' # Disable recipe API globally
-#' options(metasurvey.skip_recipes = TRUE)
-#' # Now get_recipe() will return NULL with a warning
-#'
-#' # For year ranges
-#' panel_recipe <- get_recipe(
-#'   svy_type = "ech_panel",
-#'   svy_edition = "2020-2023"
-#' )
-#' }
+#' # Restore previous backend
+#' options(metasurvey.backend = old)
 #'
 #' @seealso
 #' \code{\link{recipe}} to create custom recipes

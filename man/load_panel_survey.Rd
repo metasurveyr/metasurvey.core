@@ -53,8 +53,28 @@ Read panel survey files from different formats
 and create a RotativePanelSurvey object
 }
 \examples{
+# Build a small panel from temporary CSV files
+impl_dir <- tempfile("panel_")
+follow_dir <- file.path(impl_dir, "follow_up")
+dir.create(follow_dir, recursive = TRUE)
+dt <- data.table::data.table(id = 1:20, income = runif(20), w = 1)
+data.table::fwrite(dt, file.path(impl_dir, "ech_2023.csv"))
+data.table::fwrite(dt, file.path(follow_dir, "ech_2023_01.csv"))
+data.table::fwrite(dt, file.path(follow_dir, "ech_2023_02.csv"))
+
+panel <- load_panel_survey(
+  path_implantation = file.path(impl_dir, "ech_2023.csv"),
+  path_follow_up = follow_dir,
+  svy_type = "ech",
+  svy_weight_implantation = add_weight(annual = "w"),
+  svy_weight_follow_up = add_weight(monthly = "w")
+)
+panel
+unlink(impl_dir, recursive = TRUE)
+
 \dontrun{
-# example code
+# Not run: requires the full ECH 2023 microdata and bootstrap
+# replicate-weight files on disk
 path_dir <- here::here("example-data", "ech", "ech_2023")
 ech_2023 <- load_panel_survey(
   path_implantation = file.path(
@@ -89,17 +109,6 @@ ech_2023 <- load_panel_survey(
     )
   )
 )
-}
-\dontrun{
-# Example of loading a panel survey
-panel_survey <- load_panel_survey(
-  path_implantation = "path/to/implantation.csv",
-  path_follow_up = "path/to/follow_up",
-  svy_type = "ech",
-  svy_weight_implantation = add_weight(annual = "w_ano"),
-  svy_weight_follow_up = add_weight(monthly = "w_monthly")
-)
-print(panel_survey)
 }
 }
 \seealso{

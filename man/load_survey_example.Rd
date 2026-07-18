@@ -35,7 +35,7 @@ Available survey types and editions can be found at:
 }
 \examples{
 \dontrun{
-# Load ECH 2023 example data
+# Not run: downloads data from GitHub (requires internet access)
 ech_path <- load_survey_example("ech", "2023")
 
 # Use with load_survey
