@@ -660,7 +660,12 @@ has_design <- function(svy) {
 }
 
 #' @title get_metadata
-#' @description Get metadata from survey
+#' @description Display survey metadata on the console. This function is
+#' the shared implementation behind the \code{print()} methods of
+#' \code{\link{Survey}}, \code{\link{RotativePanelSurvey}} and
+#' \code{\link{PoolSurvey}}, which is why it writes with \code{cat()}
+#' rather than through the \code{metasurvey.verbose}-gated message
+#' helper.
 #' @keywords survey
 #' @importFrom glue glue
 #' @param self Object of class Survey

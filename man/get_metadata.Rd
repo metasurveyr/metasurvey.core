@@ -13,7 +13,12 @@ get_metadata(self)
 NULL (called for side effect: prints metadata to console).
 }
 \description{
-Get metadata from survey
+Display survey metadata on the console. This function is
+the shared implementation behind the \code{print()} methods of
+\code{\link{Survey}}, \code{\link{RotativePanelSurvey}} and
+\code{\link{PoolSurvey}}, which is why it writes with \code{cat()}
+rather than through the \code{metasurvey.verbose}-gated message
+helper.
 }
 \examples{
 dt <- data.table::data.table(

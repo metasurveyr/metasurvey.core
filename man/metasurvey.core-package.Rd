@@ -55,6 +55,14 @@ workflows with variance adjustment
 of variation quality
 \item Built-in variance estimation with multiple engines
 }
+
+\strong{Configuration and Error Handling:}
+\itemize{
+\item \link{metasurvey.core-options}: Package options
+(engine, laziness, copy semantics, backends, verbosity)
+\item \link{metasurvey_conditions}: Condition classes signalled
+by the package, for use with \code{tryCatch()}
+}
 }
 
 \references{
