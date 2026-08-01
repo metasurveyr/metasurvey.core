@@ -268,3 +268,47 @@ test_that("step_quantile without a weight on an unweighted survey errors", {
     class = "metasurvey_error_step"
   )
 })
+
+test_that("validate_replicate validates replicate id and pattern specs", {
+  dat <- data.table::data.table(id = 1:3, w1 = 1:3, w2 = 4:6)
+  f <- tempfile(fileext = ".csv")
+  data.table::fwrite(data.table::data.table(id = 1:3, br1 = 1, br2 = 2), f)
+  on.exit(unlink(f))
+  expect_error(
+    validate_replicate(dat, list(replicate_id = 42, replicate_path = f)),
+    class = "metasurvey_error_survey"
+  )
+  expect_error(
+    validate_replicate(dat, list(replicate_id = c(zz = "id"), replicate_path = f)),
+    class = "metasurvey_error_survey"
+  )
+  expect_error(
+    validate_replicate(
+      dat,
+      list(replicate_id = c(id = "id"), replicate_path = f, replicate_pattern = 42)
+    ),
+    class = "metasurvey_error_survey"
+  )
+  expect_error(
+    validate_replicate(
+      dat,
+      list(replicate_id = c(id = "id"), replicate_path = f, replicate_pattern = "^nomatch")
+    ),
+    class = "metasurvey_error_survey"
+  )
+})
+
+test_that("read_recipe falls back to raw steps with a classed warning", {
+  r <- recipe(
+    name = "X", user = "t",
+    svy = survey_empty(type = "ech", edition = "2023"),
+    description = "d"
+  )
+  f <- tempfile(fileext = ".json")
+  on.exit(unlink(f))
+  save_recipe(r, f)
+  j <- jsonlite::read_json(f, simplifyVector = TRUE)
+  j$steps <- "step_compute(svy, x = (("
+  jsonlite::write_json(j, f, auto_unbox = TRUE)
+  expect_warning(read_recipe(f), class = "metasurvey_warning_recipe")
+})

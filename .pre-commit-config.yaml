@@ -102,4 +102,9 @@ repos:
 
 ci:
     autoupdate_schedule: monthly
-    skip: [spell-check, lintr, no-commit-to-branch]
+    # pre-commit.ci no puede instalar libs de sistema (libnode-dev para V8,
+    # etc.), así que ahí se saltean todos los hooks R: los corre el workflow
+    # pre-commit de GitHub Actions, que controla su entorno.
+    skip: [style-files, use-tidy-description, spell-check, lintr, parsable-R,
+           no-browser-statement, no-print-statement, deps-in-desc,
+           no-commit-to-branch]

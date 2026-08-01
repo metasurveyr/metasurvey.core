@@ -37,9 +37,10 @@ jobs:
       - name: System dependencies (ctags, global, LaTeX for the PDF manual)
         run: |
           sudo apt-get update
-          sudo apt-get install -y universal-ctags global \
+          sudo apt-get install -y universal-ctags global qpdf \
             texlive-latex-base texlive-latex-recommended \
-            texlive-fonts-recommended texlive-latex-extra
+            texlive-fonts-recommended texlive-latex-extra \
+            texlive-fonts-extra
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
@@ -53,6 +54,9 @@ jobs:
         run: |
           check <- pkgcheck::pkgcheck()
           summary(check)
+          rc <- check$goodpractice$rcmdcheck
+          for (w in rc$warnings) message("rcmdcheck warning: ", w)
+          for (e in rc$errors) message("rcmdcheck error: ", e)
           md <- pkgcheck::checks_to_markdown(check, render = FALSE)
           s_break <- grep("---", md)[1]
           errors <- grep(

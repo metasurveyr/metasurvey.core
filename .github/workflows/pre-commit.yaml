@@ -36,12 +36,20 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Libs de sistema para el build renv de los hooks R (V8 estático evita
+      # depender de libnode del runner)
+      - name: System dependencies for R hook environments
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libxml2-dev pandoc
+
       # Pre-commit hooks (skip spell-check + no-commit-to-branch in CI)
       - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
         env:
           SKIP: spell-check,no-commit-to-branch
+          DOWNLOAD_STATIC_LIBV8: 1
 
       # Roxygen freshness check (runs roxygenise and checks for diffs)
       - name: Check roxygen is up to date
