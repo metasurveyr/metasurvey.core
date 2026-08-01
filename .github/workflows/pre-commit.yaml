@@ -50,6 +50,9 @@ jobs:
         env:
           SKIP: spell-check,no-commit-to-branch
           DOWNLOAD_STATIC_LIBV8: 1
+          # Sin symlinks al cache global de renv: el action solo cachea
+          # ~/.cache/pre-commit y los symlinks quedarían rotos al restaurar
+          RENV_CONFIG_CACHE_ENABLED: "false"
 
       # Roxygen freshness check (runs roxygenise and checks for diffs)
       - name: Check roxygen is up to date

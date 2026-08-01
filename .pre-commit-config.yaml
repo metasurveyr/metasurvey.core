@@ -1,5 +1,7 @@
 # metasurvey.core pre-commit configuration
 # https://pre-commit.com | R hooks: https://github.com/lorenzwalthert/precommit
+# (nota: editar este archivo invalida la caché de entornos en CI — el hash
+# del archivo es la cache key del pre-commit action)
 
 repos:
 # ── R-specific hooks (lorenzwalthert/precommit) ─────────────
