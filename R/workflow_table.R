@@ -68,10 +68,12 @@ workflow_table <- function(
   theme = "publication"
 ) {
   if (!requireNamespace("gt", quietly = TRUE)) {
-    warning(
-      "Package 'gt' is required for formatted tables. ",
-      "Falling back to knitr::kable().",
-      call. = FALSE
+    msvy_warn(
+      paste0(
+        "Package 'gt' is required for formatted tables. ",
+        "Falling back to knitr::kable()."
+      ),
+      class = "metasurvey_warning_workflow"
     )
     return(.workflow_table_kable(result, digits))
   }

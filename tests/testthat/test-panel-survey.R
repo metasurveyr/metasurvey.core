@@ -52,7 +52,7 @@ test_that("RotativePanelSurvey validates follow-up periodicity", {
       workflows = list(),
       design = NULL
     ),
-    "All follow-up surveys must have the same type"
+    class = "metasurvey_error_panel"
   )
 })
 
@@ -131,7 +131,7 @@ test_that("extract_surveys validates input", {
 
   expect_error(
     extract_surveys(not_panel, index = 1),
-    "must be an object of class"
+    class = "metasurvey_error_panel"
   )
 })
 
@@ -144,7 +144,7 @@ test_that("get_implantation returns implantation survey", {
 })
 
 test_that("get_implantation errors on non-RotativePanelSurvey", {
-  expect_error(get_implantation("not a panel"), "must be an object of class")
+  expect_error(get_implantation("not a panel"), class = "metasurvey_error_panel")
 })
 
 # --- get_follow_up ---
@@ -156,7 +156,7 @@ test_that("get_follow_up returns follow-up surveys", {
 })
 
 test_that("get_follow_up errors on non-RotativePanelSurvey", {
-  expect_error(get_follow_up("not a panel"), "must be an object of class")
+  expect_error(get_follow_up("not a panel"), class = "metasurvey_error_panel")
 })
 
 # --- PoolSurvey ---
@@ -499,7 +499,7 @@ test_that("extract_surveys warns when all interval args NULL", {
   # The fallback year=1 then fails, so expect both warning + error
   expect_warning(
     tryCatch(extract_surveys(panel), error = function(e) NULL),
-    "At least one interval"
+    class = "metasurvey_warning_panel"
   )
 })
 

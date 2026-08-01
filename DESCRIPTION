@@ -1,6 +1,6 @@
 Package: metasurvey.core
 Title: Local Engine for Reproducible Survey Data Processing
-Version: 0.3.0
+Version: 0.3.1
 URL: https://metasurveyr.github.io/metasurvey.core/,
     https://github.com/metasurveyr/metasurvey.core
 BugReports: https://github.com/metasurveyr/metasurvey.core/issues

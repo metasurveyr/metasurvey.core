@@ -294,7 +294,7 @@ test_that("step_remove warns for nonexistent variables", {
   s <- make_test_survey()
   expect_warning(
     step_remove(s, nonexistent_var),
-    "not found"
+    class = "metasurvey_warning_step"
   )
 })
 
@@ -339,7 +339,7 @@ test_that("step_rename errors for nonexistent variable", {
   s <- make_test_survey()
   expect_error(
     step_rename(s, new_name = nonexistent_col),
-    "not found"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -360,13 +360,13 @@ test_that("step_rename errors with invalid mapping", {
   s <- make_test_survey()
   expect_error(
     step_rename(s, mapping = c("a", "b")),
-    "named character vector"
+    class = "metasurvey_error_step"
   )
 })
 
 test_that("step_remove with vars as non-character errors", {
   s <- make_test_survey()
-  expect_error(step_remove(s, vars = 123), "character")
+  expect_error(step_remove(s, vars = 123), class = "metasurvey_error_step")
 })
 
 test_that("step_join errors when no common columns and by is NULL", {
@@ -374,7 +374,7 @@ test_that("step_join errors when no common columns and by is NULL", {
   extra <- data.table::data.table(code = 1:3, val = 1:3)
   expect_error(
     step_join(s, extra, type = "left"),
-    "infer join keys|common columns"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -391,7 +391,7 @@ test_that("step_join errors when keys not found", {
   extra <- data.table::data.table(code = 1:3, val = 1:3)
   expect_error(
     step_join(s, extra, by = c("missing_key" = "code")),
-    "not found"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -400,7 +400,7 @@ test_that("step_join errors when rhs keys not found", {
   extra <- data.table::data.table(code = 1:3, val = 1:3)
   expect_error(
     step_join(s, extra, by = c("id" = "missing_key")),
-    "not found"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -419,7 +419,7 @@ test_that("step_join handles overlapping column names", {
 
 test_that("step_join errors on non-data.frame x", {
   s <- make_test_survey()
-  expect_error(step_join(s, "not a data frame", by = "id"), "data.frame")
+  expect_error(step_join(s, "not a data frame", by = "id"), class = "metasurvey_error_step")
 })
 
 test_that("view_graph requires visNetwork", {
@@ -790,7 +790,7 @@ test_that("new_step errors when recode type missing new_var", {
       id = 1, name = "test", description = "test",
       type = "recode"
     ),
-    "new_var is required"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -858,7 +858,7 @@ test_that("step_join errors when key not found in survey", {
   extra <- data.table::data.table(id = 1:10, val = 1:10)
   expect_error(
     step_join(s, extra, by = "nonexistent", type = "left"),
-    "Join keys not found"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -867,7 +867,7 @@ test_that("step_join errors when key not found in x", {
   extra <- data.table::data.table(person_id = 1:10, val = 1:10)
   expect_error(
     step_join(s, extra, by = c("id" = "bad_key"), type = "left"),
-    "Join keys not found"
+    class = "metasurvey_error_step"
   )
 })
 
@@ -966,7 +966,7 @@ test_that("step_filter on RotativePanelSurvey", {
 test_that("step_filter validates dependencies", {
   s <- make_test_survey()
   s2 <- step_filter(s, nonexistent_var > 0)
-  expect_error(bake_steps(s2), "not in the survey")
+  expect_error(bake_steps(s2), class = "metasurvey_error_step")
 })
 
 test_that("step_filter is lazy by default", {
@@ -988,7 +988,7 @@ test_that("step_filter with .copy preserves original", {
 
 test_that("step_filter requires at least one expression", {
   s <- make_test_survey()
-  expect_error(step_filter(s), "at least one filter expression")
+  expect_error(step_filter(s), class = "metasurvey_error_step")
 })
 
 # --- Edge case tests (Round 6 audit) ---

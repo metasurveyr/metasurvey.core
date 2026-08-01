@@ -84,7 +84,10 @@ RotativePanelSurvey <- R6Class(
       )
 
       if (length(unique(follow_up_types)) > 1) {
-        stop("All follow-up surveys must have the same type", call. = FALSE)
+        msvy_abort(
+          "All follow-up surveys must have the same type",
+          class = "metasurvey_error_panel"
+        )
       }
 
       self$periodicity <- list(
@@ -212,44 +215,31 @@ RotativePanelSurvey <- R6Class(
 #' with a warning.
 #'
 #' @examples
+#' # Panels usually come from load_panel_survey(); here we build a
+#' # small one in memory
+#' mk <- function(edition) {
+#'   Survey$new(
+#'     data = data.table::data.table(id = 1:5, w = 1),
+#'     edition = edition, type = "ech", psu = NULL,
+#'     engine = "data.table", weight = add_weight(monthly = "w")
+#'   )
+#' }
+#' panel <- RotativePanelSurvey$new(
+#'   implantation = mk("2023-01-01"),
+#'   follow_up = list(mk("2023-01-01"), mk("2023-02-01"), mk("2023-03-01")),
+#'   type = "ech", default_engine = "data.table",
+#'   steps = list(), recipes = list(), workflows = list(), design = NULL
+#' )
+#'
+#' # Extract follow-up surveys by index
+#' ech_first <- extract_surveys(panel, index = 1)
+#' ech_first_two <- extract_surveys(panel, index = c(1, 2))
+#'
 #' \dontrun{
-#' # Load rotating panel
-#' panel_ech <- load_panel_survey(
-#'   path = "ech_panel_2023.dta",
-#'   svy_type = "ech_panel",
-#'   svy_edition = "2023"
-#' )
-#'
-#' # Extract specific monthly surveys
-#' ech_q1 <- extract_surveys(
-#'   panel_ech,
-#'   monthly = c(1, 2, 3) # January, February, March
-#' )
-#'
-#' # Extract by index
-#' ech_first <- extract_surveys(panel_ech, index = 1)
-#' ech_several <- extract_surveys(panel_ech, index = c(1, 3, 6))
-#'
-#' # Quarterly analysis
-#' ech_Q1_Q4 <- extract_surveys(
-#'   panel_ech,
-#'   quarterly = c(1, 4)
-#' )
-#'
-#' # Annual analysis (typically all surveys for the year)
-#' ech_annual <- extract_surveys(
-#'   panel_ech,
-#'   annual = 1
-#' )
-#'
-#' # With parallel processing for large volumes
-#' ech_full <- extract_surveys(
-#'   panel_ech,
-#'   monthly = 1:12,
-#'   use.parallel = TRUE
-#' )
-#'
-#' # Use in workflow
+#' # Not run: interval extraction needs a panel loaded from the real
+#' # microdata files (editions must carry the survey time pattern)
+#' ech_q1 <- extract_surveys(panel_ech, monthly = c(1, 2, 3))
+#' ech_annual <- extract_surveys(panel_ech, annual = 1)
 #' results <- workflow(
 #'   survey = extract_surveys(panel_ech, quarterly = c(1, 2)),
 #'   svymean(~unemployed, na.rm = TRUE),
@@ -275,11 +265,14 @@ extract_surveys <- function(RotativePanelSurvey,
                             biannual = NULL,
                             use.parallel = FALSE) {
   if (is.null(monthly) && is.null(annual) && is.null(quarterly) && is.null(biannual) && is.null(index)) {
-    warning(paste0(
-      "At least one interval argument must be ",
-      "different from NULL. ",
-      "Returning the implantation survey."
-    ), call. = FALSE)
+    msvy_warn(
+      paste0(
+        "At least one interval argument must be ",
+        "different from NULL. ",
+        "Returning the implantation survey."
+      ),
+      class = "metasurvey_warning_panel"
+    )
     annual <- 1
   }
 
@@ -287,10 +280,13 @@ extract_surveys <- function(RotativePanelSurvey,
     RotativePanelSurvey,
     "RotativePanelSurvey"
   )) {
-    stop(paste0(
-      "The `RotativeSurvey` argument must be an ",
-      "object of class `RotativePanelSurvey`"
-    ), call. = FALSE)
+    msvy_abort(
+      paste0(
+        "The `RotativeSurvey` argument must be an ",
+        "object of class `RotativePanelSurvey`"
+      ),
+      class = "metasurvey_error_panel"
+    )
   }
 
   follow_up <- RotativePanelSurvey$follow_up
@@ -329,10 +325,12 @@ extract_surveys <- function(RotativePanelSurvey,
 
   apply_func <- if (use.parallel) {
     if (!requireNamespace("parallel", quietly = TRUE)) {
-      stop(
-        "Package 'parallel' is required. ",
-        "Install it with: install.packages('parallel')",
-        call. = FALSE
+      msvy_abort(
+        paste0(
+          "Package 'parallel' is required. ",
+          "Install it with: install.packages('parallel')"
+        ),
+        class = "metasurvey_error_panel"
       )
     }
     parallel::mclapply
@@ -532,11 +530,14 @@ get_implantation <- function(RotativePanelSurvey) {
     RotativePanelSurvey,
     "RotativePanelSurvey"
   )) {
-    stop(paste0(
-      "The `RotativeSurvey` argument must be ",
-      "an object of class ",
-      "`RotativePanelSurvey`"
-    ))
+    msvy_abort(
+      paste0(
+        "The `RotativeSurvey` argument must be ",
+        "an object of class ",
+        "`RotativePanelSurvey`"
+      ),
+      class = "metasurvey_error_panel"
+    )
   }
 
   return(RotativePanelSurvey$implantation)
@@ -623,11 +624,14 @@ get_follow_up <- function(
     RotativePanelSurvey,
     "RotativePanelSurvey"
   )) {
-    stop(paste0(
-      "The `RotativeSurvey` argument must be ",
-      "an object of class ",
-      "`RotativePanelSurvey`"
-    ))
+    msvy_abort(
+      paste0(
+        "The `RotativeSurvey` argument must be ",
+        "an object of class ",
+        "`RotativePanelSurvey`"
+      ),
+      class = "metasurvey_error_panel"
+    )
   }
 
   return(RotativePanelSurvey$follow_up[index])

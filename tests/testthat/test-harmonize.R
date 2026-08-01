@@ -55,7 +55,7 @@ test_that("topo_sort_recipes: cycle detection", {
 
   expect_error(
     topo_sort_recipes(list(r1, r2)),
-    "Cycle detected"
+    class = "metasurvey_error_recipe"
   )
 })
 
@@ -71,15 +71,15 @@ test_that("topo_sort_recipes: external deps are ignored", {
 # --- harmonize tests ---
 
 test_that("harmonize: rejects non-list input", {
-  expect_error(harmonize(NULL), "non-empty list")
-  expect_error(harmonize(list()), "non-empty list")
-  expect_error(harmonize("not a list"), "non-empty list")
+  expect_error(harmonize(NULL), class = "metasurvey_input_error")
+  expect_error(harmonize(list()), class = "metasurvey_input_error")
+  expect_error(harmonize("not a list"), class = "metasurvey_input_error")
 })
 
 test_that("harmonize: rejects non-Survey elements", {
   expect_error(
     harmonize(list("not a survey")),
-    "not a Survey object"
+    class = "metasurvey_input_error"
   )
 })
 
@@ -87,7 +87,7 @@ test_that("harmonize: rejects invalid grouping", {
   svy <- make_test_survey(10)
   expect_error(
     harmonize(list(svy), grouping = "invalid"),
-    "grouping"
+    class = "metasurvey_input_error"
   )
 })
 
@@ -99,7 +99,7 @@ test_that("harmonize: no recipes warns and returns unchanged", {
 
   expect_warning(
     pool <- harmonize(list(svy), .verbose = FALSE),
-    "No recipes found"
+    class = "metasurvey_warning_recipe"
   )
 
   expect_s3_class(pool, "PoolSurvey")

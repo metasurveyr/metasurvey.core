@@ -24,7 +24,7 @@ member <- recipe_user(
 }
 \seealso{
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeCertification}},
 \code{\link[=add_category]{add_category()}},
 \code{\link[=certify_recipe]{certify_recipe()}},

@@ -1,5 +1,12 @@
 # rOpenSci pkgcheck — runs the same checks used in rOpenSci peer review.
 # https://docs.ropensci.org/pkgcheck/
+#
+# Corre pkgcheck directo con r-lib/actions en vez de
+# ropensci-review-tools/pkgcheck-action: el contenedor Docker del action choca
+# con el chequeo de ownership de libgit2 ("repository not owned by current
+# user") en las imágenes actuales de ubuntu-latest. La lógica de fallo replica
+# la de R/check.R del action (cualquier ítem :heavy_multiplication_x: en el
+# resumen hace fallar el job).
 on:
   push:
     branches: [main]
@@ -8,10 +15,8 @@ on:
 
 name: pkgcheck
 
-# El action postea los resultados como issue del repo: necesita issues: write
 permissions:
   contents: read
-  issues: write
 
 jobs:
   pkgcheck:
@@ -19,4 +24,46 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: ropensci-review-tools/pkgcheck-action@main
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: System dependencies (ctags, global, LaTeX for the PDF manual)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y universal-ctags global qpdf \
+            texlive-latex-base texlive-latex-recommended \
+            texlive-fonts-recommended texlive-latex-extra \
+            texlive-fonts-extra
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"all"'
+          extra-packages: |
+            any::rcmdcheck
+            ropensci-review-tools/pkgcheck
+
+      - name: Run pkgcheck
+        shell: Rscript {0}
+        run: |
+          check <- pkgcheck::pkgcheck()
+          summary(check)
+          rc <- check$goodpractice$rcmdcheck
+          for (w in rc$warnings) message("rcmdcheck warning: ", w)
+          for (e in rc$errors) message("rcmdcheck error: ", e)
+          md <- pkgcheck::checks_to_markdown(check, render = FALSE)
+          s_break <- grep("---", md)[1]
+          errors <- grep(
+            "^- :heavy_multiplication_x:", md[seq_len(s_break)],
+            value = TRUE
+          )
+          for (e in errors) {
+            message("pkgcheck: ", sub("^- :heavy_multiplication_x: ", "", e))
+          }
+          if (length(errors) > 0L) quit(status = 1L)

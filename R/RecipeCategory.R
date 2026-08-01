@@ -10,21 +10,7 @@
 #' @field description Character. Human-readable description.
 #' @field parent RecipeCategory or NULL. Parent category for hierarchy.
 #'
-#' @section Methods:
-#' \describe{
-#'   \item{$new(name, description, parent)}{Constructor
-#'     for creating a new category}
-#'   \item{$is_subcategory_of(ancestor_name)}{Check if
-#'     this category is a subcategory of another}
-#'   \item{$get_path()}{Get full hierarchical path}
-#'   \item{$equals(other)}{Check equality by name}
-#'   \item{$to_list()}{Serialize to list for JSON}
-#'   \item{$print(...)}{Print category information}
-#'   \item{$from_list(lst)}{Class method to reconstruct
-#'     from list (see details)}
-#' }
-#'
-#' @return An object of class \code{RecipeCategory}.
+#' @return An [R6][R6::R6Class] object of class `RecipeCategory`.
 #'
 #' @examples
 #' # Use recipe_category() for the public API:
@@ -51,10 +37,16 @@ RecipeCategory <- R6::R6Class(
     #' @param parent RecipeCategory or NULL. Parent category.
     initialize = function(name, description, parent = NULL) {
       if (is.null(name) || !is.character(name) || nchar(name) == 0) {
-        stop("Category name must be a non-empty character string", call. = FALSE)
+        msvy_abort(
+          "Category name must be a non-empty character string",
+          class = "metasurvey_error_recipe"
+        )
       }
       if (!is.null(parent) && !inherits(parent, "RecipeCategory")) {
-        stop("parent must be a RecipeCategory object or NULL", call. = FALSE)
+        msvy_abort(
+          "parent must be a RecipeCategory object or NULL",
+          class = "metasurvey_error_recipe"
+        )
       }
       self$name <- name
       self$description <- description
@@ -129,22 +121,20 @@ RecipeCategory <- R6::R6Class(
     #' @return RecipeCategory object or NULL
     from_list = function(lst) {
       # Placeholder - actual implementation added via $set() below
-      stop(
-        "This method should be called as ",
-        "RecipeCategory$from_list(), not on an instance",
-        call. = FALSE
+      msvy_abort(
+        paste0(
+          "This method should be called as ",
+          "RecipeCategory$from_list(), not on an instance"
+        ),
+        class = "metasurvey_error_recipe"
       )
     }
   )
 )
 
-#' @title Deserialize a RecipeCategory from a list
-#' @name RecipeCategory-from_list
-#' @description Class method to reconstruct a
-#'   RecipeCategory from its list representation.
-#' @param lst List with name, description, parent fields, or NULL.
-#' @return RecipeCategory object or NULL
-#' @keywords internal
+# Actual $from_list implementation; roxygen docs live on the placeholder
+# method inside the class definition (plain comments here so roxygen's R6
+# mode does not merge a second block into the class topic).
 RecipeCategory$set("public", "from_list", function(lst) {
   if (is.null(lst)) {
     return(NULL)

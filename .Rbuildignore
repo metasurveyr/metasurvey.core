@@ -4,6 +4,7 @@
 ^LICENSE\.md$
 ^MIGRATION\.md$
 ^\.Rproj\.user$
+^\.claude$
 ^\.github$
 ^\.gitignore$
 ^\.lintr$
@@ -13,3 +14,5 @@
 ^docs$
 ^example-data$
 ^pkgdown$
+^ropensci-fixes-prompt\.md$
+^ropensci-submission-draft\.md$

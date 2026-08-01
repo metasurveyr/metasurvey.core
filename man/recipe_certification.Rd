@@ -36,7 +36,7 @@ cert <- recipe_certification("official", certified_by = inst)
 \code{\link{RecipeCertification}}, \code{\link{certify_recipe}}
 
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeCertification}},
 \code{\link{RecipeUser}},
 \code{\link[=add_category]{add_category()}},

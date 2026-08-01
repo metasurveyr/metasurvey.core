@@ -1,10 +1,12 @@
 # metasurvey.core pre-commit configuration
 # https://pre-commit.com | R hooks: https://github.com/lorenzwalthert/precommit
+# (nota: editar este archivo invalida la caché de entornos en CI — el hash
+# del archivo es la cache key del pre-commit action)
 
 repos:
 # ── R-specific hooks (lorenzwalthert/precommit) ─────────────
 -   repo: https://github.com/lorenzwalthert/precommit
-    rev: v0.4.3.9028
+    rev: v0.4.3.9030
     hooks:
     -   id: style-files
         args: [--style_pkg=styler, --style_fun=tidyverse_style]
@@ -102,4 +104,9 @@ repos:
 
 ci:
     autoupdate_schedule: monthly
-    skip: [spell-check, lintr, no-commit-to-branch]
+    # pre-commit.ci no puede instalar libs de sistema (libnode-dev para V8,
+    # etc.), así que ahí se saltean todos los hooks R: los corre el workflow
+    # pre-commit de GitHub Actions, que controla su entorno.
+    skip: [style-files, use-tidy-description, spell-check, lintr, parsable-R,
+           no-browser-statement, no-print-statement, deps-in-desc,
+           no-commit-to-branch]

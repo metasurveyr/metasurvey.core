@@ -387,7 +387,7 @@ test_that("add_recipe allows different editions but errors on type mismatch", {
     user = "tester", description = "Test", steps = list(),
     id = "r2", doi = NULL, topic = NULL
   )
-  expect_error(s$add_recipe(r_diff_type), "survey type mismatch")
+  expect_error(s$add_recipe(r_diff_type), class = "metasurvey_error_recipe")
 })
 
 # --- get_info_weight ---
@@ -713,7 +713,7 @@ test_that("add_recipe warns when depends_on variables missing from data", {
     id = "warn_001"
   )
 
-  expect_warning(s$add_recipe(r), "not present in survey")
+  expect_warning(s$add_recipe(r), class = "metasurvey_warning_recipe")
   expect_length(s$recipes, 1)
 })
 
@@ -1029,7 +1029,7 @@ test_that("update_design warns on design length mismatch", {
   s$ensure_design()
   # Corrupt design by adding extra entry
   s$design$extra <- s$design$annual
-  expect_warning(s$update_design(), "mismatch")
+  expect_warning(s$update_design(), class = "metasurvey_warning_survey")
 })
 
 # ── Additional survey coverage push ──────────────────────────────────────────
@@ -1106,7 +1106,7 @@ test_that("ensure_design errors on nonexistent strata variable", {
     psu = NULL, strata = "nonexistent", engine = "data.table",
     weight = add_weight(annual = "w")
   )
-  expect_error(s$ensure_design(), "not found")
+  expect_error(s$ensure_design(), class = "metasurvey_error_survey")
 })
 
 test_that("cat_design shows strata after stratified design", {

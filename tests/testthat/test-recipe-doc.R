@@ -131,7 +131,7 @@ test_that("Recipe$validate() checks for required variables", {
     psu = NULL, engine = "data.table",
     weight = add_weight(annual = "w")
   )
-  expect_error(rec$validate(svy2), "requires variables not present")
+  expect_error(rec$validate(svy2), class = "metasurvey_error_recipe")
 })
 
 test_that("save_recipe() includes all metadata and doc", {

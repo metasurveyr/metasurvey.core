@@ -31,7 +31,7 @@ r <- r |> set_user_info(user)
 \code{\link{recipe_user}}
 
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeCertification}},
 \code{\link{RecipeUser}},
 \code{\link[=add_category]{add_category()}},

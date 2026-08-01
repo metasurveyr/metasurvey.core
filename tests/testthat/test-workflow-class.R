@@ -202,7 +202,7 @@ test_that("print.RecipeWorkflow produces output", {
 })
 
 test_that("save_workflow rejects non-RecipeWorkflow objects", {
-  expect_error(save_workflow(list(name = "fake"), tempfile()), "Can only save RecipeWorkflow")
+  expect_error(save_workflow(list(name = "fake"), tempfile()), class = "metasurvey_error_workflow")
 })
 
 test_that("workflow_from_list handles minimal input", {

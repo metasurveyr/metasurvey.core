@@ -219,3 +219,96 @@ test_that("add_weight validates weight specifications", {
   )
   expect_identical(add_weight(annual = "w"), list(annual = "w"))
 })
+
+# ---- classed error branches flagged by patch coverage (rOpenSci prep) ----
+
+test_that("set_use_copy and set_lazy_processing validate their input", {
+  expect_error(set_use_copy("yes"), class = "metasurvey_input_error")
+  expect_error(set_use_copy(c(TRUE, FALSE)), class = "metasurvey_input_error")
+  expect_error(set_lazy_processing("yes"), class = "metasurvey_input_error")
+  expect_error(set_lazy_processing(NULL), class = "metasurvey_input_error")
+})
+
+test_that("publish_recipe rejects non-Recipe objects", {
+  expect_error(publish_recipe(42), class = "metasurvey_error_recipe")
+  expect_error(publish_recipe(list()), class = "metasurvey_error_recipe")
+})
+
+test_that("recipe() requires the full metadata set", {
+  expect_error(recipe(), class = "metasurvey_error_recipe")
+  expect_error(recipe(name = "only-a-name"), class = "metasurvey_error_recipe")
+})
+
+test_that("validate_time_pattern needs a type in edition or argument", {
+  expect_error(
+    validate_time_pattern(svy_type = NULL, svy_edition = "2023"),
+    class = "metasurvey_input_error"
+  )
+})
+
+test_that("validate_weight_time_pattern rejects non-list patterns", {
+  svy <- make_test_survey()
+  expect_error(
+    validate_weight_time_pattern(svy, "w"),
+    class = "metasurvey_error_survey"
+  )
+})
+
+test_that("step_quantile without a weight on an unweighted survey errors", {
+  svy <- Survey$new(
+    data = data.table::data.table(id = 1:10, x = 1:10),
+    edition = "2023",
+    type = "ech",
+    psu = NULL,
+    engine = "data.table",
+    weight = NULL
+  )
+  expect_error(
+    step_quantile(svy, xq, x, n = 2),
+    class = "metasurvey_error_step"
+  )
+})
+
+test_that("validate_replicate validates replicate id and pattern specs", {
+  dat <- data.table::data.table(id = 1:3, w1 = 1:3, w2 = 4:6)
+  f <- tempfile(fileext = ".csv")
+  data.table::fwrite(data.table::data.table(id = 1:3, br1 = 1, br2 = 2), f)
+  on.exit(unlink(f))
+  expect_error(
+    validate_replicate(dat, list(replicate_id = 42, replicate_path = f)),
+    class = "metasurvey_error_survey"
+  )
+  expect_error(
+    validate_replicate(dat, list(replicate_id = c(zz = "id"), replicate_path = f)),
+    class = "metasurvey_error_survey"
+  )
+  expect_error(
+    validate_replicate(
+      dat,
+      list(replicate_id = c(id = "id"), replicate_path = f, replicate_pattern = 42)
+    ),
+    class = "metasurvey_error_survey"
+  )
+  expect_error(
+    validate_replicate(
+      dat,
+      list(replicate_id = c(id = "id"), replicate_path = f, replicate_pattern = "^nomatch")
+    ),
+    class = "metasurvey_error_survey"
+  )
+})
+
+test_that("read_recipe falls back to raw steps with a classed warning", {
+  r <- recipe(
+    name = "X", user = "t",
+    svy = survey_empty(type = "ech", edition = "2023"),
+    description = "d"
+  )
+  f <- tempfile(fileext = ".json")
+  on.exit(unlink(f))
+  save_recipe(r, f)
+  j <- jsonlite::read_json(f, simplifyVector = TRUE)
+  j$steps <- "step_compute(svy, x = (("
+  jsonlite::write_json(j, f, auto_unbox = TRUE)
+  expect_warning(read_recipe(f), class = "metasurvey_warning_recipe")
+})

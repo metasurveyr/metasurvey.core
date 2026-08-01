@@ -23,12 +23,17 @@
 .backend_api_call <- function(op, args = list()) {
   provider <- getOption("metasurvey.backend_provider", default = NULL)
   if (is.null(provider) || !is.function(provider)) {
-    stop(
-      "Remote ('api') backend is not available. Install and load ",
-      "'metasurvey.explorer.backend' to publish/fetch recipes and workflows ",
-      "from a metasurvey API, or use a local backend with ",
-      "set_backend(\"local\", path = ...).",
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "Remote ('api') backend is not available. Install and load ",
+        "'metasurvey.explorer.backend' to publish/fetch recipes and workflows ",
+        "from a metasurvey API, or use a local backend with ",
+        "set_backend(\"local\", path = ...)."
+      ),
+      class = c(
+        "metasurvey_error_backend_unavailable",
+        "metasurvey_error_backend"
+      )
     )
   }
   provider(op, args)

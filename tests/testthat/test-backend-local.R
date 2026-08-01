@@ -34,7 +34,7 @@ test_that("RecipeBackend creates api backend (mongo alias)", {
 })
 
 test_that("invalid backend type throws error", {
-  expect_error(RecipeBackend$new("postgres"))
+  expect_error(RecipeBackend$new("postgres"), class = "metasurvey_error_backend")
 })
 
 test_that("local backend: publish writes to registry", {

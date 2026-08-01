@@ -24,7 +24,7 @@ top10 <- rank_recipes(n = 10)
 \code{\link{search_recipes}}, \code{\link{filter_recipes}}
 
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeCertification}},
 \code{\link{RecipeUser}},
 \code{\link[=add_category]{add_category()}},

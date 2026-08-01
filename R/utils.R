@@ -51,16 +51,16 @@ validate_weight <- function(svy, weight) {
   }
 
   if (!is.character(weight)) {
-    stop("Weight must be a character", call. = FALSE)
+    msvy_abort("Weight must be a character", class = "metasurvey_error_survey")
   }
 
   if (!weight %in% colnames(svy)) {
-    stop(
+    msvy_abort(
       glue::glue(
         "Weight column '{weight}' not found in survey data. ",
         "Available columns: {paste(head(colnames(svy), 10), collapse = ', ')}"
       ),
-      call. = FALSE
+      class = "metasurvey_error_survey"
     )
   } else {
     weight
@@ -81,17 +81,20 @@ validate_replicate <- function(svy, replicate) {
 
   if (!is.null(replicate$replicate_id)) {
     if (!is.character(replicate$replicate_id)) {
-      stop("Replicate ID must be a character", call. = FALSE)
+      msvy_abort(
+        "Replicate ID must be a character",
+        class = "metasurvey_error_survey"
+      )
     }
 
     if (!all(names(replicate$replicate_id) %in% colnames(svy))) {
       missing <- setdiff(names(replicate$replicate_id), colnames(svy))
-      stop(
+      msvy_abort(
         glue::glue(
           "Replicate ID column(s) not found in survey: ",
           "{paste(missing, collapse = ', ')}"
         ),
-        call. = FALSE
+        class = "metasurvey_error_survey"
       )
     }
   }
@@ -101,13 +104,19 @@ validate_replicate <- function(svy, replicate) {
 
   if (!is.null(replicate$replicate_pattern)) {
     if (!is.character(replicate$replicate_pattern)) {
-      stop("Replicate pattern must be a character", call. = FALSE)
+      msvy_abort(
+        "Replicate pattern must be a character",
+        class = "metasurvey_error_survey"
+      )
     }
 
     column_names <- names(replicate_file)
 
     if (!any(grepl(replicate$replicate_pattern, column_names))) {
-      stop("Replicate pattern not found in replicate file", call. = FALSE)
+      msvy_abort(
+        "Replicate pattern not found in replicate file",
+        class = "metasurvey_error_survey"
+      )
     }
   }
 
@@ -132,7 +141,10 @@ validate_weight_time_pattern <- function(svy, weight_list) {
   }
 
   if (!is.list(weight_list)) {
-    stop("Weight time pattern must be a list", call. = FALSE)
+    msvy_abort(
+      "Weight time pattern must be a list",
+      class = "metasurvey_error_survey"
+    )
   }
 
   Map(
@@ -177,7 +189,7 @@ validate_weight_time_pattern <- function(svy, weight_list) {
 #'
 #' @examples
 #' \dontrun{
-#' # Load ECH 2023 example data
+#' # Not run: downloads data from GitHub (requires internet access)
 #' ech_path <- load_survey_example("ech", "2023")
 #'
 #' # Use with load_survey
@@ -210,12 +222,12 @@ load_survey_example <- function(svy_type, svy_edition) {
       quiet = TRUE
     ),
     error = function(e) {
-      stop(
+      msvy_abort(
         sprintf(
           "Failed to download example data for '%s/%s': %s",
           svy_type, svy_edition, conditionMessage(e)
         ),
-        call. = FALSE
+        class = "metasurvey_error_io"
       )
     }
   )
@@ -293,7 +305,10 @@ use_copy_default <- function() {
 #' @keywords utils
 set_use_copy <- function(use_copy) {
   if (!is.logical(use_copy) || length(use_copy) != 1L) {
-    stop("use_copy must be a single logical value", call. = FALSE)
+    msvy_abort(
+      "use_copy must be a single logical value",
+      class = "metasurvey_input_error"
+    )
   }
 
   old <- getOption("metasurvey.use_copy")
@@ -302,31 +317,9 @@ set_use_copy <- function(use_copy) {
 }
 
 
-#' Get User
-#' @return User
-#' @keywords utils
-#' @keywords internal
-#' @noRd
-
-get_user <- function() {
-  user_key <- NULL
-
-  api_key <- getOption("metasurvey.api_key", default = NULL)
-
-  if (!is.null(api_key)) {
-    user_key <- "apiKey"
-  }
-
-  getOption(
-    "metasurvey.user",
-    default = NULL
-  ) %||% user_key %||% "public"
-}
-
-
-# Legacy Atlas direct-access functions were removed.
-# All API access now goes through api_client.R → plumber API.
-# See configure_api(), api_login(), api_list_recipes(), etc.
+# Credentials and API access live in the provider packages
+# (metasurvey.explorer.backend); core reaches the remote backend only
+# through the .backend_api_call() hook. See backend-provider.R.
 
 
 #' Lazy processing
@@ -357,7 +350,10 @@ lazy_default <- function() {
 
 set_lazy_processing <- function(lazy) {
   if (!is.logical(lazy) || length(lazy) != 1L) {
-    stop("lazy must be a single logical value", call. = FALSE)
+    msvy_abort(
+      "lazy must be a single logical value",
+      class = "metasurvey_input_error"
+    )
   }
 
   old <- getOption("metasurvey.lazy_processing")
@@ -565,10 +561,12 @@ validate_time_pattern <- function(svy_type = NULL, svy_edition = NULL) {
       identical(svy_edition, "")
   ) {
     if (is.null(svy_type)) {
-      stop(
-        "Both svy_edition and svy_type are NULL. ",
-        "Please provide at least one.",
-        call. = FALSE
+      msvy_abort(
+        paste0(
+          "Both svy_edition and svy_type are NULL. ",
+          "Please provide at least one."
+        ),
+        class = "metasurvey_input_error"
       )
     }
     # If no edition but type exists, return type only
@@ -582,10 +580,12 @@ validate_time_pattern <- function(svy_type = NULL, svy_edition = NULL) {
   time_pattern <- extract_time_pattern(svy_edition)
 
   if (is.null(time_pattern$type) && is.null(svy_type)) {
-    stop(
-      "Type not found. Please provide a valid type ",
-      "in the survey edition or as an argument",
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "Type not found. Please provide a valid type ",
+        "in the survey edition or as an argument"
+      ),
+      class = "metasurvey_input_error"
     )
   }
 

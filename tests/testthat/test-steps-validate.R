@@ -26,13 +26,13 @@ test_that("step_validate stops on failure by default", {
   svy <- make_test_survey(10)
   # age is never > 1000
   svy2 <- step_validate(svy, age > 1000)
-  expect_error(bake_steps(svy2), "Validation failed")
+  expect_error(bake_steps(svy2), class = "metasurvey_error_step")
 })
 
 test_that("step_validate warns instead of stopping with .action = 'warn'", {
   svy <- make_test_survey(10)
   svy2 <- step_validate(svy, age > 1000, .action = "warn")
-  expect_warning(bake_steps(svy2), "Validation failed")
+  expect_warning(bake_steps(svy2), class = "metasurvey_warning_step")
 })
 
 test_that("step_validate reports which check failed", {
@@ -84,7 +84,7 @@ test_that("step_validate detects issues after preceding steps", {
   svy2 <- svy |>
     step_compute(bad = NA_real_) |>
     step_validate(!is.na(bad))
-  expect_error(bake_steps(svy2), "Validation failed")
+  expect_error(bake_steps(svy2), class = "metasurvey_error_step")
 })
 
 test_that("step_validate stores comment", {

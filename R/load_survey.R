@@ -70,7 +70,7 @@
 #' ech_sample
 #'
 #' \dontrun{
-#' # Load ECH 2023 with recipes
+#' # Not run: needs full local microdata files and a configured backend
 #' ech_2023 <- load_survey(
 #'   path = "data/ech_2023.csv",
 #'   svy_type = "ech",
@@ -80,27 +80,12 @@
 #'   bake = TRUE
 #' )
 #'
-#' # Load monthly survey
+#' # Load monthly survey from STATA format
 #' ech_january <- load_survey(
 #'   path = "data/ech_202301.dta",
 #'   svy_type = "ech",
 #'   svy_edition = "202301",
 #'   svy_weight = add_weight(monthly = "pesomes")
-#' )
-#'
-#' # Create empty object for pipeline
-#' pipeline <- load_survey(
-#'   svy_type = "ech",
-#'   svy_edition = "2023"
-#' ) %>%
-#'   step_compute(new_var = operation)
-#'
-#' # With included example data
-#' ech_example <- load_survey(
-#'   path = load_survey_example("ech", "ech_2022"),
-#'   svy_type = "ech",
-#'   svy_edition = "2022",
-#'   svy_weight = add_weight(annual = "pesoano")
 #' )
 #' }
 #'
@@ -132,9 +117,9 @@ load_survey <- function(
   if (
     path_null && svy_args_null
   ) {
-    stop(
+    msvy_abort(
       "Must provide either a file path or a survey type with edition",
-      call. = FALSE
+      class = "metasurvey_error_io"
     )
   }
 
@@ -198,8 +183,28 @@ load_survey <- function(
 #'   load_panel_survey
 #' @return RotativePanelSurvey object
 #' @examples
+#' # Build a small panel from temporary CSV files
+#' impl_dir <- tempfile("panel_")
+#' follow_dir <- file.path(impl_dir, "follow_up")
+#' dir.create(follow_dir, recursive = TRUE)
+#' dt <- data.table::data.table(id = 1:20, income = runif(20), w = 1)
+#' data.table::fwrite(dt, file.path(impl_dir, "ech_2023.csv"))
+#' data.table::fwrite(dt, file.path(follow_dir, "ech_2023_01.csv"))
+#' data.table::fwrite(dt, file.path(follow_dir, "ech_2023_02.csv"))
+#'
+#' panel <- load_panel_survey(
+#'   path_implantation = file.path(impl_dir, "ech_2023.csv"),
+#'   path_follow_up = follow_dir,
+#'   svy_type = "ech",
+#'   svy_weight_implantation = add_weight(annual = "w"),
+#'   svy_weight_follow_up = add_weight(monthly = "w")
+#' )
+#' panel
+#' unlink(impl_dir, recursive = TRUE)
+#'
 #' \dontrun{
-#' # example code
+#' # Not run: requires the full ECH 2023 microdata and bootstrap
+#' # replicate-weight files on disk
 #' path_dir <- here::here("example-data", "ech", "ech_2023")
 #' ech_2023 <- load_panel_survey(
 #'   path_implantation = file.path(
@@ -235,17 +240,6 @@ load_survey <- function(
 #'   )
 #' )
 #' }
-#' \dontrun{
-#' # Example of loading a panel survey
-#' panel_survey <- load_panel_survey(
-#'   path_implantation = "path/to/implantation.csv",
-#'   path_follow_up = "path/to/follow_up",
-#'   svy_type = "ech",
-#'   svy_weight_implantation = add_weight(annual = "w_ano"),
-#'   svy_weight_follow_up = add_weight(monthly = "w_monthly")
-#' )
-#' print(panel_survey)
-#' }
 #' @keywords preprocessing
 #' @family survey-loading
 #' @export
@@ -266,9 +260,9 @@ load_panel_survey <- function(
   )
 
   if (length(names(svy_weight_follow_up)) > 1) {
-    stop(
+    msvy_abort(
       "The follow-up survey must have a single weight time pattern",
-      call. = FALSE
+      class = "metasurvey_error_io"
     )
   }
 
@@ -312,9 +306,9 @@ load_panel_survey <- function(
       FUN = function(x) {
         time_pattern <- extract_time_pattern(x)
         if (time_pattern$periodicity != "Monthly") {
-          stop(
+          msvy_abort(
             "The periodicity of the file is not monthly",
-            call. = FALSE
+            class = "metasurvey_error_io"
           )
         } else {
           return(
@@ -355,9 +349,9 @@ load_panel_survey <- function(
       FUN = function(x) {
         time_pattern <- extract_time_pattern(x)
         if (time_pattern$periodicity != "Monthly") {
-          stop(
+          msvy_abort(
             "The periodicity of the file is not monthly",
-            call. = FALSE
+            class = "metasurvey_error_io"
           )
         } else {
           return(
@@ -442,10 +436,12 @@ read_file <- function(file, .args = NULL, convert = FALSE) {
   if (convert) {
     if (.extension != ".csv" && !file.exists(.output_file)) {
       if (!requireNamespace("rio", quietly = TRUE)) {
-        stop(
-          "Package 'rio' is required. ",
-          "Install it with: install.packages('rio')",
-          call. = FALSE
+        msvy_abort(
+          paste0(
+            "Package 'rio' is required. ",
+            "Install it with: install.packages('rio')"
+          ),
+          class = "metasurvey_error_io"
         )
       }
       rio::convert(
@@ -464,16 +460,21 @@ read_file <- function(file, .args = NULL, convert = FALSE) {
     csv = list(package = "data.table", read_function = "fread"),
     xlsx = list(package = "openxlsx", read_function = "read.xlsx"),
     rds = list(package = "base", read_function = "readRDS"),
-    stop("Unsupported file type: ", .extension, call. = FALSE)
+    msvy_abort(
+      paste0("Unsupported file type: ", .extension),
+      class = "metasurvey_error_io"
+    )
   )
 
   if (!requireNamespace(.read_function$package, quietly = TRUE)) {
-    stop(
-      "Package '", .read_function$package,
-      "' is required to read .", .extension, " files. ",
-      "Please install it with: install.packages('",
-      .read_function$package, "')",
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "Package '", .read_function$package,
+        "' is required to read .", .extension, " files. ",
+        "Please install it with: install.packages('",
+        .read_function$package, "')"
+      ),
+      class = "metasurvey_error_io"
     )
   }
 

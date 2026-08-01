@@ -400,12 +400,12 @@ step_compute <- function(
       if (validate_step(svy, step)) {
         .svy_after$add_step(step)
       } else {
-        stop(
+        msvy_abort(
           sprintf(
             "Step validation failed for compute step creating: %s",
             paste(.new_vars, collapse = ", ")
           ),
-          call. = FALSE
+          class = "metasurvey_error_step"
         )
       }
       return(.svy_after)
@@ -1019,7 +1019,10 @@ step_join <- function(
   # Normalize RHS data source
   rhs_data <- if (methods::is(x, "Survey")) get_data(x) else x
   if (!is.data.frame(rhs_data)) {
-    stop("x must be a data.frame/data.table or a Survey", call. = FALSE)
+    msvy_abort(
+      "x must be a data.frame/data.table or a Survey",
+      class = "metasurvey_error_step"
+    )
   }
 
   # RotativePanelSurvey: apply to implantation and each follow_up
@@ -1055,7 +1058,10 @@ step_join <- function(
   if (is.null(by)) {
     common <- intersect(names(lhs_data), names(rhs_data))
     if (length(common) == 0) {
-      stop("Cannot infer join keys: no common columns", call. = FALSE)
+      msvy_abort(
+        "Cannot infer join keys: no common columns",
+        class = "metasurvey_error_step"
+      )
     }
     by.x <- by.y <- common
   } else {
@@ -1072,16 +1078,22 @@ step_join <- function(
   miss_x <- setdiff(by.x, names(lhs_data))
   miss_y <- setdiff(by.y, names(rhs_data))
   if (length(miss_x) > 0) {
-    stop(sprintf(
-      "Join keys not found in survey: %s",
-      paste(miss_x, collapse = ", ")
-    ), call. = FALSE)
+    msvy_abort(
+      sprintf(
+        "Join keys not found in survey: %s",
+        paste(miss_x, collapse = ", ")
+      ),
+      class = "metasurvey_error_step"
+    )
   }
   if (length(miss_y) > 0) {
-    stop(sprintf(
-      "Join keys not found in x: %s",
-      paste(miss_y, collapse = ", ")
-    ), call. = FALSE)
+    msvy_abort(
+      sprintf(
+        "Join keys not found in x: %s",
+        paste(miss_y, collapse = ", ")
+      ),
+      class = "metasurvey_error_step"
+    )
   }
 
   # Prepare RHS: resolve name conflicts (excluding join keys)
@@ -1244,7 +1256,10 @@ step_remove <- function(
     if (is.character(vars)) {
       var_names <- vars
     } else {
-      stop("'vars' must be a character vector of variable names", call. = FALSE)
+      msvy_abort(
+        "'vars' must be a character vector of variable names",
+        class = "metasurvey_error_step"
+      )
     }
   } else {
     dots_list <- as.list(substitute(list(...)))[-1]
@@ -1320,10 +1335,13 @@ step_remove <- function(
   data <- get_data(svy) # Check against original data
   missing <- setdiff(var_names, names(data))
   if (length(missing) > 0) {
-    warning(sprintf(
-      "Variables not found and cannot be removed: %s",
-      paste(missing, collapse = ", ")
-    ), call. = FALSE)
+    msvy_warn(
+      sprintf(
+        "Variables not found and cannot be removed: %s",
+        paste(missing, collapse = ", ")
+      ),
+      class = "metasurvey_warning_step"
+    )
   }
 
   # Apply change only if not lazy
@@ -1420,8 +1438,9 @@ step_rename <- function(
   # Build mapping new -> old
   if (!is.null(mapping)) {
     if (is.null(names(mapping)) || !is.character(mapping)) {
-      stop("'mapping' must be a named character vector: new_name = old_name",
-        call. = FALSE
+      msvy_abort(
+        "'mapping' must be a named character vector: new_name = old_name",
+        class = "metasurvey_error_step"
       )
     }
     map <- mapping
@@ -1498,10 +1517,13 @@ step_rename <- function(
   data <- get_data(svy) # Check against original data
   missing <- setdiff(unname(map), names(data))
   if (length(missing) > 0) {
-    stop(sprintf(
-      "Variables to rename not found: %s",
-      paste(missing, collapse = ", ")
-    ), call. = FALSE)
+    msvy_abort(
+      sprintf(
+        "Variables to rename not found: %s",
+        paste(missing, collapse = ", ")
+      ),
+      class = "metasurvey_error_step"
+    )
   }
 
   # Apply change only if not lazy
@@ -1620,8 +1642,9 @@ step_validate <- function(
   checks <- as.list(substitute(list(...))[-1])
 
   if (length(checks) == 0 && is.null(.min_n)) {
-    stop("step_validate requires at least one check expression or .min_n",
-      call. = FALSE
+    msvy_abort(
+      "step_validate requires at least one check expression or .min_n",
+      class = "metasurvey_error_step"
     )
   }
 
@@ -1728,7 +1751,10 @@ step_filter <- function(
   exprs <- as.list(substitute(list(...))[-1])
 
   if (length(exprs) == 0) {
-    stop("step_filter requires at least one filter expression", call. = FALSE)
+    msvy_abort(
+      "step_filter requires at least one filter expression",
+      class = "metasurvey_error_step"
+    )
   }
 
   is_literal <- vapply(exprs, is.atomic, logical(1))
@@ -1970,7 +1996,10 @@ step_quantile <- function(
   n_invalid <- !is.numeric(n) || length(n) != 1 || is.na(n) ||
     n < 2 || n != as.integer(n)
   if (n_invalid) {
-    stop("n must be a single integer >= 2", call. = FALSE)
+    msvy_abort(
+      "n must be a single integer >= 2",
+      class = "metasurvey_error_step"
+    )
   }
   n <- as.integer(n)
 
@@ -1998,10 +2027,12 @@ step_quantile <- function(
   if (is.null(weight)) {
     weight <- default_weight_var(svy)
     if (is.null(weight)) {
-      stop(
-        "step_quantile: survey has no weight attached; ",
-        "pass `weight` explicitly",
-        call. = FALSE
+      msvy_abort(
+        paste0(
+          "step_quantile: survey has no weight attached; ",
+          "pass `weight` explicitly"
+        ),
+        class = "metasurvey_error_step"
       )
     }
   }
@@ -2012,14 +2043,19 @@ step_quantile <- function(
   needed <- unique(c(x, weight, .by))
   missing_vars <- setdiff(needed, names(.data))
   if (length(missing_vars) > 0) {
-    stop(
-      "step_quantile: variables not found in survey: ",
-      paste(missing_vars, collapse = ", "),
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "step_quantile: variables not found in survey: ",
+        paste(missing_vars, collapse = ", ")
+      ),
+      class = "metasurvey_error_step"
     )
   }
   if (!is.numeric(.data[[x]])) {
-    stop("step_quantile: `", x, "` must be numeric", call. = FALSE)
+    msvy_abort(
+      paste0("step_quantile: `", x, "` must be numeric"),
+      class = "metasurvey_error_step"
+    )
   }
 
   probs <- seq_len(n - 1L) / n
@@ -2146,7 +2182,10 @@ step_collapse <- function(
   rule <- match.arg(rule)
 
   if (!is.character(by) || length(by) == 0) {
-    stop("by must be a non-empty character vector", call. = FALSE)
+    msvy_abort(
+      "by must be a non-empty character vector",
+      class = "metasurvey_error_step"
+    )
   }
 
   # RotativePanelSurvey: apply to implantation and each follow_up
@@ -2174,10 +2213,12 @@ step_collapse <- function(
 
   missing_vars <- setdiff(by, names(.data))
   if (length(missing_vars) > 0) {
-    stop(
-      "step_collapse: grouping variables not found in survey: ",
-      paste(missing_vars, collapse = ", "),
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "step_collapse: grouping variables not found in survey: ",
+        paste(missing_vars, collapse = ", ")
+      ),
+      class = "metasurvey_error_step"
     )
   }
 
@@ -2192,11 +2233,13 @@ step_collapse <- function(
       .SDcols = weight_col
     ][[".varies"]]
     if (any(varies)) {
-      warning(
-        "step_collapse: weight '", weight_col, "' varies within some ",
-        "groups; the collapsed weight is taken with rule = '", rule,
-        "' and may not be a valid group weight",
-        call. = FALSE
+      msvy_warn(
+        paste0(
+          "step_collapse: weight '", weight_col, "' varies within some ",
+          "groups; the collapsed weight is taken with rule = '", rule,
+          "' and may not be a valid group weight"
+        ),
+        class = "metasurvey_warning_step"
       )
     }
   }
@@ -2273,17 +2316,21 @@ view_graph <- function(svy, init_step = "Load survey") {
   comments <- get_comments(steps)
 
   if (!requireNamespace("visNetwork", quietly = TRUE)) {
-    stop(
-      "Package 'visNetwork' is required. ",
-      "Install it with: install.packages('visNetwork')",
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "Package 'visNetwork' is required. ",
+        "Install it with: install.packages('visNetwork')"
+      ),
+      class = "metasurvey_error_step"
     )
   }
   if (!requireNamespace("htmltools", quietly = TRUE)) {
-    stop(
-      "Package 'htmltools' is required. ",
-      "Install it with: install.packages('htmltools')",
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "Package 'htmltools' is required. ",
+        "Install it with: install.packages('htmltools')"
+      ),
+      class = "metasurvey_error_step"
     )
   }
 
@@ -2775,7 +2822,10 @@ new_step <- function(id = 1, name, description,
                      new_var = NULL, ...) {
   if (type == "recode") {
     if (is.null(new_var)) {
-      stop("new_var is required for recode", call. = FALSE)
+      msvy_abort(
+        "new_var is required for recode",
+        class = "metasurvey_error_step"
+      )
     }
   }
 

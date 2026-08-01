@@ -327,7 +327,10 @@ workflow_from_list <- function(lst) {
 #' save_workflow(wf, f)
 save_workflow <- function(wf, file) {
   if (!inherits(wf, "RecipeWorkflow")) {
-    stop("Can only save RecipeWorkflow objects", call. = FALSE)
+    msvy_abort(
+      "Can only save RecipeWorkflow objects",
+      class = "metasurvey_error_workflow"
+    )
   }
   wf_data <- wf$to_list()
   jsonlite::write_json(

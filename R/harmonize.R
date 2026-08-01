@@ -50,10 +50,12 @@ topo_sort_recipes <- function(recipes) {
   }
 
   if (length(sorted) != length(ids)) {
-    stop(
-      "Cycle detected in recipe dependencies: cannot sort recipes ",
-      paste(ids[!ids %in% sorted], collapse = ", "),
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "Cycle detected in recipe dependencies: cannot sort recipes ",
+        paste(ids[!ids %in% sorted], collapse = ", ")
+      ),
+      class = "metasurvey_error_recipe"
     )
   }
 
@@ -144,23 +146,28 @@ harmonize <- function(surveys,
                       group_name = "series",
                       .verbose = getOption("metasurvey.verbose", TRUE)) {
   if (!is.list(surveys) || length(surveys) == 0) {
-    stop("'surveys' must be a non-empty list of Survey objects", call. = FALSE)
+    msvy_abort(
+      "'surveys' must be a non-empty list of Survey objects",
+      class = "metasurvey_input_error"
+    )
   }
 
   valid_groupings <- c("annual", "quarterly", "monthly", "biannual")
   if (!grouping %in% valid_groupings) {
-    stop(
-      "'grouping' must be one of: ",
-      paste(valid_groupings, collapse = ", "),
-      call. = FALSE
+    msvy_abort(
+      paste0(
+        "'grouping' must be one of: ",
+        paste(valid_groupings, collapse = ", ")
+      ),
+      class = "metasurvey_input_error"
     )
   }
 
   for (i in seq_along(surveys)) {
     if (!inherits(surveys[[i]], "Survey")) {
-      stop(
-        "Element ", i, " of 'surveys' is not a Survey object",
-        call. = FALSE
+      msvy_abort(
+        paste0("Element ", i, " of 'surveys' is not a Survey object"),
+        class = "metasurvey_input_error"
       )
     }
   }
@@ -188,11 +195,13 @@ harmonize <- function(surveys,
     )
 
     if (length(recipes) == 0) {
-      warning(
-        "No recipes found for survey ", i,
-        " (", svy_type, " ", svy_edition, ")",
-        ". Including unchanged.",
-        call. = FALSE
+      msvy_warn(
+        paste0(
+          "No recipes found for survey ", i,
+          " (", svy_type, " ", svy_edition, ")",
+          ". Including unchanged."
+        ),
+        class = "metasurvey_warning_recipe"
       )
       harmonized[[i]] <- svy
       next

@@ -354,7 +354,7 @@ test_that("workflow_pool accepts rho and warns on deprecated R", {
       R = 2,
       estimation_type = "annual"
     ),
-    "deprecated"
+    class = "metasurvey_warning_workflow"
   )
   expect_s3_class(result, "data.table")
   expect_true(nrow(result) > 0)

@@ -93,7 +93,7 @@ ech_sample <- load_survey(
 ech_sample
 
 \dontrun{
-# Load ECH 2023 with recipes
+# Not run: needs full local microdata files and a configured backend
 ech_2023 <- load_survey(
   path = "data/ech_2023.csv",
   svy_type = "ech",
@@ -103,27 +103,12 @@ ech_2023 <- load_survey(
   bake = TRUE
 )
 
-# Load monthly survey
+# Load monthly survey from STATA format
 ech_january <- load_survey(
   path = "data/ech_202301.dta",
   svy_type = "ech",
   svy_edition = "202301",
   svy_weight = add_weight(monthly = "pesomes")
-)
-
-# Create empty object for pipeline
-pipeline <- load_survey(
-  svy_type = "ech",
-  svy_edition = "2023"
-) \%>\%
-  step_compute(new_var = operation)
-
-# With included example data
-ech_example <- load_survey(
-  path = load_survey_example("ech", "ech_2022"),
-  svy_type = "ech",
-  svy_edition = "2022",
-  svy_weight = add_weight(annual = "pesoano")
 )
 }
 

@@ -5,7 +5,8 @@
 
 test_that("load_survey error when no path and no survey args", {
   expect_error(
-    load_survey()
+    load_survey(),
+    class = "metasurvey_error_io"
   )
 })
 
@@ -113,7 +114,7 @@ test_that("read_file handles unsupported extension", {
 
   expect_error(
     metasurvey.core:::read_file(tmp),
-    "Unsupported file type"
+    class = "metasurvey_error_io"
   )
 })
 

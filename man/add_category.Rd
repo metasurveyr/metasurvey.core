@@ -38,7 +38,7 @@ r <- r |>
 \code{\link{default_categories}}
 
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeCertification}},
 \code{\link{RecipeUser}},
 \code{\link[=certify_recipe]{certify_recipe()}},
