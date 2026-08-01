@@ -10,21 +10,7 @@
 #' @field description Character. Human-readable description.
 #' @field parent RecipeCategory or NULL. Parent category for hierarchy.
 #'
-#' @section Methods:
-#' \describe{
-#'   \item{$new(name, description, parent)}{Constructor
-#'     for creating a new category}
-#'   \item{$is_subcategory_of(ancestor_name)}{Check if
-#'     this category is a subcategory of another}
-#'   \item{$get_path()}{Get full hierarchical path}
-#'   \item{$equals(other)}{Check equality by name}
-#'   \item{$to_list()}{Serialize to list for JSON}
-#'   \item{$print(...)}{Print category information}
-#'   \item{$from_list(lst)}{Class method to reconstruct
-#'     from list (see details)}
-#' }
-#'
-#' @return An object of class \code{RecipeCategory}.
+#' @return An [R6][R6::R6Class] object of class `RecipeCategory`.
 #'
 #' @examples
 #' # Use recipe_category() for the public API:
@@ -146,13 +132,9 @@ RecipeCategory <- R6::R6Class(
   )
 )
 
-#' @title Deserialize a RecipeCategory from a list
-#' @name RecipeCategory-from_list
-#' @description Class method to reconstruct a
-#'   RecipeCategory from its list representation.
-#' @param lst List with name, description, parent fields, or NULL.
-#' @return RecipeCategory object or NULL
-#' @keywords internal
+# Actual $from_list implementation; roxygen docs live on the placeholder
+# method inside the class definition (plain comments here so roxygen's R6
+# mode does not merge a second block into the class topic).
 RecipeCategory$set("public", "from_list", function(lst) {
   if (is.null(lst)) {
     return(NULL)

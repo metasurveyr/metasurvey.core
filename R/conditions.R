@@ -116,5 +116,8 @@ msvy_warn <- function(message, class, ...) {
 #'   set_engine("not-an-engine"),
 #'   metasurvey_error_engine = function(e) "engine problem"
 #' )
+#' @return No return value. This topic documents the condition classes
+#'   signalled by metasurvey.core; catch them with [tryCatch()] or
+#'   [withCallingHandlers()] as shown in the examples.
 #' @name metasurvey_conditions
 NULL

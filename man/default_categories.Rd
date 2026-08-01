@@ -19,7 +19,7 @@ vapply(cats, function(c) c$name, character(1))
 }
 \seealso{
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeCertification}},
 \code{\link{RecipeUser}},
 \code{\link[=add_category]{add_category()}},

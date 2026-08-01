@@ -71,7 +71,7 @@ member2 <- recipe_user(
 \code{\link{certify_recipe}}
 
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeCertification}},
 \code{\link{RecipeUser}},
 \code{\link[=add_category]{add_category()}},

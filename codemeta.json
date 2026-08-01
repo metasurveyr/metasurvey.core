@@ -2,13 +2,13 @@
   "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
   "@type": "SoftwareSourceCode",
   "identifier": "metasurvey.core",
-  "description": "The local processing engine of the 'metasurvey' ecosystem. Provides a step-based pipeline for reproducible survey data processing, building on the 'survey' package for complex sampling designs. Supports rotating panels with bootstrap replicate weights and a recipe system for reproducing data transformation workflows across survey editions.",
+  "description": "The processing engine of the 'metasurvey' ecosystem. Provides a step-based pipeline for reproducible survey data processing, building on the 'survey' package for complex sampling designs. Supports rotating panels with bootstrap replicate weights and a recipe system for reproducing data transformation workflows across survey editions.",
   "name": "metasurvey.core: Local Engine for Reproducible Survey Data Processing",
   "relatedLink": "https://metasurveyr.github.io/metasurvey.core/",
   "codeRepository": "https://github.com/metasurveyr/metasurvey.core",
   "issueTracker": "https://github.com/metasurveyr/metasurvey.core/issues",
   "license": "https://spdx.org/licenses/GPL-3.0",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "R",
@@ -408,7 +408,7 @@
     },
     "SystemRequirements": null
   },
-  "fileSize": "1171.82KB",
+  "fileSize": "1199.566KB",
   "citation": [
     {
       "@type": "SoftwareSourceCode",
@@ -432,7 +432,7 @@
       ],
       "name": "metasurvey.core: Local Engine for Reproducible Survey Data Processing",
       "url": "https://github.com/metasurveyr/metasurvey.core",
-      "description": "R package version 0.3.0"
+      "description": "R package version 0.3.1"
     }
   ],
   "releaseNotes": "https://github.com/metasurveyr/metasurvey.core/blob/main/NEWS.md",

@@ -20,7 +20,7 @@ official <- recipe_certification("official", certified_by = inst)
 }
 \seealso{
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeUser}},
 \code{\link[=add_category]{add_category()}},
 \code{\link[=certify_recipe]{certify_recipe()}},

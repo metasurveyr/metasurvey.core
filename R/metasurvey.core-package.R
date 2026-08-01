@@ -160,5 +160,7 @@ NULL
 #' # Current engine and laziness
 #' getOption("metasurvey.engine")
 #' lazy_default()
+#' @return No return value. This topic documents the global options
+#'   recognised by metasurvey.core and their defaults.
 #' @name metasurvey.core-options
 NULL

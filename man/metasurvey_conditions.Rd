@@ -3,6 +3,11 @@
 \name{metasurvey_conditions}
 \alias{metasurvey_conditions}
 \title{Condition classes signalled by metasurvey.core}
+\value{
+No return value. This topic documents the condition classes
+signalled by metasurvey.core; catch them with \code{\link[=tryCatch]{tryCatch()}} or
+\code{\link[=withCallingHandlers]{withCallingHandlers()}} as shown in the examples.
+}
 \description{
 All errors and warnings signalled by metasurvey.core are classed
 conditions: they carry a domain-specific subclass plus the package-wide

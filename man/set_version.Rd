@@ -28,7 +28,7 @@ r <- r |> set_version("2.0.0")
 }
 \seealso{
 Other tidy-api:
-\code{\link{RecipeCategory-from_list}},
+\code{\link{RecipeCategory}},
 \code{\link{RecipeCertification}},
 \code{\link{RecipeUser}},
 \code{\link[=add_category]{add_category()}},

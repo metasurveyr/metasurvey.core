@@ -3,6 +3,10 @@
 \name{metasurvey.core-options}
 \alias{metasurvey.core-options}
 \title{Options used by metasurvey.core}
+\value{
+No return value. This topic documents the global options
+recognised by metasurvey.core and their defaults.
+}
 \description{
 All behavior toggles of metasurvey.core are controlled through R
 \code{\link[=options]{options()}} under the \code{metasurvey.} prefix. None of them needs to be
