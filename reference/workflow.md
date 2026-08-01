@@ -167,6 +167,7 @@ result_by <- workflow(
   survey::svyby(~x, ~g, survey::svymean, na.rm = TRUE),
   estimation_type = "annual"
 )
+#> Warning: CV may not be useful for negative statistics
 
 # Domain (subpopulation) estimation: subset applied on the design
 result_domain <- workflow(

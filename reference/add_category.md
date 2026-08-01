@@ -2,7 +2,7 @@
 
 Pipe-friendly function to add a category to a Recipe object. Accepts
 either a category name (string) or a
-[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md)
+[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md)
 object.
 
 ## Usage
@@ -37,7 +37,7 @@ The modified Recipe object (invisibly for piping).
 [`default_categories`](https://metasurveyr.github.io/metasurvey.core/reference/default_categories.md)
 
 Other tidy-api:
-[`RecipeCategory-from_list`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md),
+[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md),
 [`RecipeCertification`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCertification.md),
 [`RecipeUser`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeUser.md),
 [`certify_recipe()`](https://metasurveyr.github.io/metasurvey.core/reference/certify_recipe.md),

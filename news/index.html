@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasurvey.core</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,6 +64,13 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.1" id="metasurveycore-031-development">metasurvey.core 0.3.1 (development)<a class="anchor" aria-label="anchor" href="#metasurveycore-031-development"></a></h2>
+<ul><li>All errors and warnings are now classed conditions: every condition carries a domain subclass (e.g. <code>metasurvey_error_step</code>, <code>metasurvey_error_recipe</code>, <code>metasurvey_error_backend_unavailable</code>) plus the base class <code>metasurvey_error</code> / <code>metasurvey_warning</code>, so they can be handled with <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code> without matching message text. See the new <code><a href="../reference/metasurvey_conditions.html">?metasurvey_conditions</a></code> topic for the full list. Messages are unchanged, but code that matched on condition <em>classes</em> such as <code>rlang_error</code> may need review.</li>
+<li>Removed the last remote-credential residue from core: the unused internal <code>get_user()</code> helper and with it any reading of the <code>metasurvey.api_key</code> option. Credentials and API access belong to provider packages (e.g. <code>metasurvey.explorer.backend</code>); core reaches remote backends only through the injected <code>options(metasurvey.backend_provider = ...)</code> hook, and selecting the <code>"api"</code> backend without a provider now signals a <code>metasurvey_error_backend_unavailable</code> error that can be handled with <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code>.</li>
+<li>New <code>?metasurvey.core-options</code> topic documenting every <code>metasurvey.*</code> option with its default and effect.</li>
+<li>Examples: <code><a href="../reference/get_recipe.html">get_recipe()</a></code>, <code><a href="../reference/load_panel_survey.html">load_panel_survey()</a></code> and <code><a href="../reference/extract_surveys.html">extract_surveys()</a></code> now ship runnable offline examples; the remaining <code>\dontrun{}</code> blocks explain why they cannot run offline.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="metasurveycore-030">metasurvey.core 0.3.0<a class="anchor" aria-label="anchor" href="#metasurveycore-030"></a></h2>
 <p>Initial release of the local processing engine of the <code>metasurvey</code> ecosystem, extracted from the original monolith (archived as <a href="https://github.com/metasurveyr/metasurvey-legacy" class="external-link"><code>metasurvey-legacy</code></a>) following the modularization suggested during the rOpenSci review. The version number is aligned with the <code>metasurvey</code> meta-package.</p>
 <ul><li>Core engine: <code>Survey</code>, <code>RotativePanelSurvey</code> and <code>PoolSurvey</code> R6 classes, the lazy step pipeline (<code><a href="../reference/step_compute.html">step_compute()</a></code>, <code><a href="../reference/step_recode.html">step_recode()</a></code>, <code><a href="../reference/step_rename.html">step_rename()</a></code>, <code><a href="../reference/step_remove.html">step_remove()</a></code>, <code><a href="../reference/step_join.html">step_join()</a></code>, <code><a href="../reference/step_filter.html">step_filter()</a></code>, <code><a href="../reference/bake_steps.html">bake_steps()</a></code>), recipes with automatic documentation and validation, and estimation workflows built on the <code>survey</code> package (means, totals, ratios and domain estimation with CV-based quality labels).</li>
@@ -72,7 +79,8 @@
 <li>13 bilingual vignettes (English and Spanish), including an ECH case study that runs offline on a bundled microdata sample and reproducible examples for seven international household surveys.</li>
 <li>rOpenSci-ready packaging: README, CONTRIBUTING, Code of Conduct, GPL-3 license files, <code>codemeta.json</code>, pkgdown site, and CI (R CMD check, pkgcheck, coverage, pre-commit).</li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

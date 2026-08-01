@@ -13,7 +13,7 @@ recipes."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">metasurvey.core</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -159,54 +159,31 @@ must match for a recipe to be returned.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># Get specific recipe for ECH 2023</span></span></span>
-<span class="r-in"><span><span class="va">ech_recipe</span> <span class="op">&lt;-</span> <span class="fu">get_recipe</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  svy_type <span class="op">=</span> <span class="st">"ech"</span>,</span></span>
-<span class="r-in"><span>  svy_edition <span class="op">=</span> <span class="st">"2023"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Query a local backend (works offline)</span></span></span>
+<span class="r-in"><span><span class="va">old</span> <span class="op">&lt;-</span> <span class="fu"><a href="set_backend.html">set_backend</a></span><span class="op">(</span><span class="st">"local"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempfile</a></span><span class="op">(</span>fileext <span class="op">=</span> <span class="st">".json"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Recipe for specific topic</span></span></span>
-<span class="r-in"><span><span class="va">labor_recipe</span> <span class="op">&lt;-</span> <span class="fu">get_recipe</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  svy_type <span class="op">=</span> <span class="st">"ech"</span>,</span></span>
-<span class="r-in"><span>  svy_edition <span class="op">=</span> <span class="st">"2023"</span>,</span></span>
-<span class="r-in"><span>  topic <span class="op">=</span> <span class="st">"labor_market"</span></span></span>
+<span class="r-in"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="va"><a href="Recipe-class.html">Recipe</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  name <span class="op">=</span> <span class="st">"labor_market"</span>, edition <span class="op">=</span> <span class="st">"2023"</span>, survey_type <span class="op">=</span> <span class="st">"ech"</span>,</span></span>
+<span class="r-in"><span>  default_engine <span class="op">=</span> <span class="st">"data.table"</span>, depends_on <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  user <span class="op">=</span> <span class="st">"demo"</span>, description <span class="op">=</span> <span class="st">"Example recipe"</span>,</span></span>
+<span class="r-in"><span>  steps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"step_compute(., active = e27 &gt;= 14)"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  id <span class="op">=</span> <span class="st">"r_demo"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="publish_recipe.html">publish_recipe</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Allow multiple recipes</span></span></span>
-<span class="r-in"><span><span class="va">available_recipes</span> <span class="op">&lt;-</span> <span class="fu">get_recipe</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  svy_type <span class="op">=</span> <span class="st">"eaii"</span>,</span></span>
-<span class="r-in"><span>  svy_edition <span class="op">=</span> <span class="st">"2019-2021"</span>,</span></span>
-<span class="r-in"><span>  allowMultiple <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="co"># Get recipes for ECH 2023</span></span></span>
+<span class="r-in"><span><span class="va">ech_recipes</span> <span class="op">&lt;-</span> <span class="fu">get_recipe</span><span class="op">(</span>svy_type <span class="op">=</span> <span class="st">"ech"</span>, svy_edition <span class="op">=</span> <span class="st">"2023"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Found 1 recipes</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Get a single recipe</span></span></span>
+<span class="r-in"><span><span class="va">one_recipe</span> <span class="op">&lt;-</span> <span class="fu">get_recipe</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  svy_type <span class="op">=</span> <span class="st">"ech"</span>, svy_edition <span class="op">=</span> <span class="st">"2023"</span>,</span></span>
+<span class="r-in"><span>  allowMultiple <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Found 1 recipes</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Use recipe in load_survey</span></span></span>
-<span class="r-in"><span><span class="va">ech_with_recipe</span> <span class="op">&lt;-</span> <span class="fu"><a href="load_survey.html">load_survey</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  path <span class="op">=</span> <span class="st">"ech_2023.dta"</span>,</span></span>
-<span class="r-in"><span>  svy_type <span class="op">=</span> <span class="st">"ech"</span>,</span></span>
-<span class="r-in"><span>  svy_edition <span class="op">=</span> <span class="st">"2023"</span>,</span></span>
-<span class="r-in"><span>  recipes <span class="op">=</span> <span class="fu">get_recipe</span><span class="op">(</span><span class="st">"ech"</span>, <span class="st">"2023"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  bake <span class="op">=</span> <span class="cn">TRUE</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Working offline - don't use recipes</span></span></span>
-<span class="r-in"><span><span class="va">ech_offline</span> <span class="op">&lt;-</span> <span class="fu"><a href="load_survey.html">load_survey</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  path <span class="op">=</span> <span class="st">"ech_2023.dta"</span>,</span></span>
-<span class="r-in"><span>  svy_type <span class="op">=</span> <span class="st">"ech"</span>,</span></span>
-<span class="r-in"><span>  svy_edition <span class="op">=</span> <span class="st">"2023"</span>,</span></span>
-<span class="r-in"><span>  svy_weight <span class="op">=</span> <span class="fu"><a href="add_weight.html">add_weight</a></span><span class="op">(</span>annual <span class="op">=</span> <span class="st">"PESOANO"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Disable recipe API globally</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>metasurvey.skip_recipes <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># Now get_recipe() will return NULL with a warning</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># For year ranges</span></span></span>
-<span class="r-in"><span><span class="va">panel_recipe</span> <span class="op">&lt;-</span> <span class="fu">get_recipe</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  svy_type <span class="op">=</span> <span class="st">"ech_panel"</span>,</span></span>
-<span class="r-in"><span>  svy_edition <span class="op">=</span> <span class="st">"2020-2023"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-in"><span><span class="co"># Restore previous backend</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>metasurvey.backend <span class="op">=</span> <span class="va">old</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

@@ -1,17 +1,18 @@
-# RecipeUser
+# RecipeCategory
 
-User identity for the recipe ecosystem. Supports three account types:
-individual, institutional_member, and institution.
+Standardized taxonomy for classifying recipes by domain. Supports
+hierarchical categories with parent-child relationships.
 
 ## Value
 
-An object of class `RecipeUser`.
+An [R6](https://r6.r-lib.org/reference/R6Class.html) object of class
+`RecipeCategory`.
 
 ## See also
 
 Other tidy-api:
-[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md),
 [`RecipeCertification`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCertification.md),
+[`RecipeUser`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeUser.md),
 [`add_category()`](https://metasurveyr.github.io/metasurvey.core/reference/add_category.md),
 [`certify_recipe()`](https://metasurveyr.github.io/metasurvey.core/reference/certify_recipe.md),
 [`default_categories()`](https://metasurveyr.github.io/metasurvey.core/reference/default_categories.md),
@@ -35,134 +36,75 @@ Other tidy-api:
 
 - `name`:
 
-  Character. User or institution name.
+  Character. Category identifier.
 
-- `email`:
+- `description`:
 
-  Character or NULL. Email address.
+  Character. Human-readable description.
 
-- `user_type`:
+- `parent`:
 
-  Character. One of "individual", "institutional_member", "institution".
-
-- `affiliation`:
-
-  Character or NULL. Organizational affiliation.
-
-- `institution`:
-
-  RecipeUser or NULL. Parent institution (for institutional_member).
-
-- `url`:
-
-  Character or NULL. Institution URL.
-
-- `verified`:
-
-  Logical. Whether the account is verified.
-
-- `review_status`:
-
-  Character. One of "approved", "pending", "rejected".
+  RecipeCategory or NULL. Parent category for hierarchy.
 
 ## Methods
 
 ### Public methods
 
-- [`RecipeUser$new()`](#method-RecipeUser-initialize)
+- [`RecipeCategory$new()`](#method-RecipeCategory-initialize)
 
-- [`RecipeUser$trust_level()`](#method-RecipeUser-trust_level)
+- [`RecipeCategory$is_subcategory_of()`](#method-RecipeCategory-is_subcategory_of)
 
-- [`RecipeUser$can_certify()`](#method-RecipeUser-can_certify)
+- [`RecipeCategory$get_path()`](#method-RecipeCategory-get_path)
 
-- [`RecipeUser$to_list()`](#method-RecipeUser-to_list)
+- [`RecipeCategory$equals()`](#method-RecipeCategory-equals)
 
-- [`RecipeUser$print()`](#method-RecipeUser-print)
+- [`RecipeCategory$to_list()`](#method-RecipeCategory-to_list)
 
-- [`RecipeUser$clone()`](#method-RecipeUser-clone)
+- [`RecipeCategory$print()`](#method-RecipeCategory-print)
+
+- [`RecipeCategory$from_list()`](#method-RecipeCategory-from_list)
+
+- [`RecipeCategory$clone()`](#method-RecipeCategory-clone)
 
 ------------------------------------------------------------------------
 
-### `RecipeUser$new()`
+### `RecipeCategory$new()`
 
-Create a new RecipeUser
+Create a new RecipeCategory
 
 #### Usage
 
-    RecipeUser$new(
-      name,
-      user_type,
-      email = NULL,
-      affiliation = NULL,
-      institution = NULL,
-      url = NULL,
-      verified = FALSE,
-      review_status = "approved"
-    )
+    RecipeCategory$new(name, description, parent = NULL)
 
 #### Arguments
 
 - `name`:
 
-  Character. User or institution name.
+  Character. Category identifier (non-empty string).
 
-- `user_type`:
+- `description`:
 
-  Character. One of "individual", "institutional_member", "institution".
+  Character. Description of the category.
 
-- `email`:
+- `parent`:
 
-  Character or NULL. Email address.
-
-- `affiliation`:
-
-  Character or NULL. Organizational affiliation.
-
-- `institution`:
-
-  RecipeUser or NULL. Parent institution for institutional_member.
-
-- `url`:
-
-  Character or NULL. Institution URL.
-
-- `verified`:
-
-  Logical. Whether account is verified.
-
-- `review_status`:
-
-  Character. "approved", "pending", or "rejected".
+  RecipeCategory or NULL. Parent category.
 
 ------------------------------------------------------------------------
 
-### `RecipeUser$trust_level()`
+### `RecipeCategory$is_subcategory_of()`
 
-Get trust level (1=individual, 2=member, 3=institution)
-
-#### Usage
-
-    RecipeUser$trust_level()
-
-#### Returns
-
-Integer trust level
-
-------------------------------------------------------------------------
-
-### `RecipeUser$can_certify()`
-
-Check if user can certify at a given level
+Check if this category is a subcategory of another
 
 #### Usage
 
-    RecipeUser$can_certify(level)
+    RecipeCategory$is_subcategory_of(ancestor_name)
 
 #### Arguments
 
-- `level`:
+- `ancestor_name`:
 
-  Character. Certification level ("reviewed" or "official").
+  Character. Name of the potential ancestor category.
 
 #### Returns
 
@@ -170,13 +112,47 @@ Logical
 
 ------------------------------------------------------------------------
 
-### `RecipeUser$to_list()`
+### `RecipeCategory$get_path()`
+
+Get full hierarchical path
+
+#### Usage
+
+    RecipeCategory$get_path()
+
+#### Returns
+
+Character string with slash-separated path
+
+------------------------------------------------------------------------
+
+### `RecipeCategory$equals()`
+
+Check equality by name
+
+#### Usage
+
+    RecipeCategory$equals(other)
+
+#### Arguments
+
+- `other`:
+
+  RecipeCategory to compare with.
+
+#### Returns
+
+Logical
+
+------------------------------------------------------------------------
+
+### `RecipeCategory$to_list()`
 
 Serialize to list for JSON
 
 #### Usage
 
-    RecipeUser$to_list()
+    RecipeCategory$to_list()
 
 #### Returns
 
@@ -184,13 +160,13 @@ List representation
 
 ------------------------------------------------------------------------
 
-### `RecipeUser$print()`
+### `RecipeCategory$print()`
 
-Print user card
+Print category
 
 #### Usage
 
-    RecipeUser$print(...)
+    RecipeCategory$print(...)
 
 #### Arguments
 
@@ -200,13 +176,33 @@ Print user card
 
 ------------------------------------------------------------------------
 
-### `RecipeUser$clone()`
+### `RecipeCategory$from_list()`
+
+Deserialize a RecipeCategory from a list
+
+#### Usage
+
+    RecipeCategory$from_list(lst)
+
+#### Arguments
+
+- `lst`:
+
+  List with name, description, parent fields, or NULL
+
+#### Returns
+
+RecipeCategory object or NULL
+
+------------------------------------------------------------------------
+
+### `RecipeCategory$clone()`
 
 The objects of this class are cloneable with this method.
 
 #### Usage
 
-    RecipeUser$clone(deep = FALSE)
+    RecipeCategory$clone(deep = FALSE)
 
 #### Arguments
 
@@ -217,12 +213,12 @@ The objects of this class are cloneable with this method.
 ## Examples
 
 ``` r
-# Use recipe_user() for the public API:
-user <- recipe_user("Juan Perez", email = "juan@example.com")
-inst <- recipe_user("IECON", type = "institution")
-member <- recipe_user(
-  "Maria",
-  type = "institutional_member",
-  institution = inst
+# Use recipe_category() for the public API:
+cat <- recipe_category(
+  "economics", "Economic indicators"
+)
+sub <- recipe_category(
+  "labor_market", "Labor market",
+  parent = "economics"
 )
 ```

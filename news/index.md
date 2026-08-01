@@ -1,5 +1,36 @@
 # Changelog
 
+## metasurvey.core 0.3.1 (development)
+
+- All errors and warnings are now classed conditions: every condition
+  carries a domain subclass (e.g. `metasurvey_error_step`,
+  `metasurvey_error_recipe`, `metasurvey_error_backend_unavailable`)
+  plus the base class `metasurvey_error` / `metasurvey_warning`, so they
+  can be handled with
+  [`tryCatch()`](https://rdrr.io/r/base/conditions.html) without
+  matching message text. See the new
+  [`?metasurvey_conditions`](https://metasurveyr.github.io/metasurvey.core/reference/metasurvey_conditions.md)
+  topic for the full list. Messages are unchanged, but code that matched
+  on condition *classes* such as `rlang_error` may need review.
+- Removed the last remote-credential residue from core: the unused
+  internal `get_user()` helper and with it any reading of the
+  `metasurvey.api_key` option. Credentials and API access belong to
+  provider packages (e.g. `metasurvey.explorer.backend`); core reaches
+  remote backends only through the injected
+  `options(metasurvey.backend_provider = ...)` hook, and selecting the
+  `"api"` backend without a provider now signals a
+  `metasurvey_error_backend_unavailable` error that can be handled with
+  [`tryCatch()`](https://rdrr.io/r/base/conditions.html).
+- New `?metasurvey.core-options` topic documenting every `metasurvey.*`
+  option with its default and effect.
+- Examples:
+  [`get_recipe()`](https://metasurveyr.github.io/metasurvey.core/reference/get_recipe.md),
+  [`load_panel_survey()`](https://metasurveyr.github.io/metasurvey.core/reference/load_panel_survey.md)
+  and
+  [`extract_surveys()`](https://metasurveyr.github.io/metasurvey.core/reference/extract_surveys.md)
+  now ship runnable offline examples; the remaining `\dontrun{}` blocks
+  explain why they cannot run offline.
+
 ## metasurvey.core 0.3.0
 
 Initial release of the local processing engine of the `metasurvey`

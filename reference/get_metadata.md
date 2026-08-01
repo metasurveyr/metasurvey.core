@@ -1,6 +1,14 @@
 # get_metadata
 
-Get metadata from survey
+Display survey metadata on the console. This function is the shared
+implementation behind the [`print()`](https://rdrr.io/r/base/print.html)
+methods of
+[`Survey`](https://metasurveyr.github.io/metasurvey.core/reference/Survey.md),
+[`RotativePanelSurvey`](https://metasurveyr.github.io/metasurvey.core/reference/RotativePanelSurvey.md)
+and
+[`PoolSurvey`](https://metasurveyr.github.io/metasurvey.core/reference/PoolSurvey.md),
+which is why it writes with [`cat()`](https://rdrr.io/r/base/cat.html)
+rather than through the `metasurvey.verbose`-gated message helper.
 
 ## Usage
 

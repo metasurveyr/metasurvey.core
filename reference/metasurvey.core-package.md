@@ -63,6 +63,16 @@ metasurvey.explorer.frontend, metasurvey.anda, metasurvey.fromstata).
 
 - Built-in variance estimation with multiple engines
 
+**Configuration and Error Handling:**
+
+- [metasurvey.core-options](https://metasurveyr.github.io/metasurvey.core/reference/metasurvey.core-options.md):
+  Package options (engine, laziness, copy semantics, backends,
+  verbosity)
+
+- [metasurvey_conditions](https://metasurveyr.github.io/metasurvey.core/reference/metasurvey_conditions.md):
+  Condition classes signalled by the package, for use with
+  [`tryCatch()`](https://rdrr.io/r/base/conditions.html)
+
 ## References
 
 Lumley, T. (2020). "survey: analysis of complex survey samples". R

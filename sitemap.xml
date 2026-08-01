@@ -24,7 +24,7 @@
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/PoolSurvey.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/Recipe-class.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/RecipeBackend.html</loc></url>
-<url><loc>https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.html</loc></url>
+<url><loc>https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/RecipeCertification.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/RecipeRegistry.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/RecipeUser.html</loc></url>
@@ -75,7 +75,9 @@
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/load_panel_survey.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/load_survey.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/load_survey_example.html</loc></url>
+<url><loc>https://metasurveyr.github.io/metasurvey.core/reference/metasurvey.core-options.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/metasurvey.core-package.html</loc></url>
+<url><loc>https://metasurveyr.github.io/metasurvey.core/reference/metasurvey_conditions.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/print.Recipe.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/print.RecipeWorkflow.html</loc></url>
 <url><loc>https://metasurveyr.github.io/metasurvey.core/reference/print.metasurvey_provenance.html</loc></url>

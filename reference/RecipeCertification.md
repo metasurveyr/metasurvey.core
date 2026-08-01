@@ -11,7 +11,7 @@ An object of class `RecipeCertification`.
 ## See also
 
 Other tidy-api:
-[`RecipeCategory-from_list`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md),
+[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md),
 [`RecipeUser`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeUser.md),
 [`add_category()`](https://metasurveyr.github.io/metasurvey.core/reference/add_category.md),
 [`certify_recipe()`](https://metasurveyr.github.io/metasurvey.core/reference/certify_recipe.md),

@@ -1,7 +1,7 @@
 # Create a recipe category
 
 Creates a
-[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md)
+[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md)
 object for classifying recipes.
 
 ## Usage
@@ -29,17 +29,17 @@ recipe_category(name, description = "", parent = NULL)
 ## Value
 
 A
-[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md)
+[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md)
 object.
 
 ## See also
 
-[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md),
+[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md),
 [`add_category`](https://metasurveyr.github.io/metasurvey.core/reference/add_category.md),
 [`default_categories`](https://metasurveyr.github.io/metasurvey.core/reference/default_categories.md)
 
 Other tidy-api:
-[`RecipeCategory-from_list`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md),
+[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md),
 [`RecipeCertification`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCertification.md),
 [`RecipeUser`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeUser.md),
 [`add_category()`](https://metasurveyr.github.io/metasurvey.core/reference/add_category.md),

@@ -25,7 +25,7 @@ List of matching Recipe objects.
 [`set_backend`](https://metasurveyr.github.io/metasurvey.core/reference/set_backend.md)
 
 Other tidy-api:
-[`RecipeCategory-from_list`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md),
+[`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md),
 [`RecipeCertification`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCertification.md),
 [`RecipeUser`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeUser.md),
 [`add_category()`](https://metasurveyr.github.io/metasurvey.core/reference/add_category.md),

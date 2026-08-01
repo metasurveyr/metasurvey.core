@@ -7,8 +7,7 @@
 - [`Recipe-class`](https://metasurveyr.github.io/metasurvey.core/reference/Recipe-class.md)
   [`Recipe`](https://metasurveyr.github.io/metasurvey.core/reference/Recipe-class.md)
   : Recipe R6 class
-- [`RecipeCategory-from_list`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md)
-  [`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory-from_list.md)
+- [`RecipeCategory`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCategory.md)
   : RecipeCategory
 - [`RecipeCertification`](https://metasurveyr.github.io/metasurvey.core/reference/RecipeCertification.md)
   : RecipeCertification
@@ -96,6 +95,10 @@
   : Load survey from file and create Survey object
 - [`load_survey_example()`](https://metasurveyr.github.io/metasurvey.core/reference/load_survey_example.md)
   : Load survey example data
+- [`metasurvey.core-options`](https://metasurveyr.github.io/metasurvey.core/reference/metasurvey.core-options.md)
+  : Options used by metasurvey.core
+- [`metasurvey_conditions`](https://metasurveyr.github.io/metasurvey.core/reference/metasurvey_conditions.md)
+  : Condition classes signalled by metasurvey.core
 - [`print(`*`<Recipe>`*`)`](https://metasurveyr.github.io/metasurvey.core/reference/print.Recipe.md)
   : Print method for Recipe objects
 - [`print(`*`<RecipeWorkflow>`*`)`](https://metasurveyr.github.io/metasurvey.core/reference/print.RecipeWorkflow.md)
