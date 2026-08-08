@@ -617,26 +617,6 @@ save_recipe <- function(recipe, file) {
   )
 }
 
-#' recipe to json
-#' @param recipe A Recipe object
-#' @return A JSON object
-#' @keywords internal
-
-recipe_to_json <- function(recipe) {
-  recipe <- list(
-    name = recipe$name,
-    user = recipe$user,
-    survey_type = recipe$survey_type,
-    edition = recipe$edition,
-    description = recipe$description,
-    steps = recipe$steps
-  )
-
-  recipe |>
-    encoding_recipe() |>
-    jsonlite::toJSON(simplifyVector = TRUE, raw = "mongo")
-}
-
 #' @title Read Recipe
 #' @description Reads a Recipe object from a JSON file.
 #' @param file A character string specifying the file path.

@@ -125,11 +125,6 @@ load_survey <- function(
 
   .engine <- getOption("metasurvey.engine")
 
-  .namespace <- ls(
-    envir = asNamespace("metasurvey.core"),
-    pattern = "load_survey"
-  )
-
   .args <- list(
     file = path,
     svy_type = svy_type,
@@ -144,14 +139,19 @@ load_survey <- function(
   )
 
 
-  .call_engine <- paste0(
-    "load_survey.",
-    .engine
+  .load_engine <- switch(.engine,
+    "data.table" = load_survey.data.table,
+    msvy_abort(
+      paste0(
+        "Unknown engine '", .engine,
+        "'. See show_engines() for the available engines."
+      ),
+      class = "metasurvey_error_survey"
+    )
   )
 
-
   do.call(
-    .call_engine,
+    .load_engine,
     args = .args
   )
 }
@@ -600,16 +600,6 @@ load_survey.data.table <- function(...) {
   } else {
     return(Survey)
   }
-}
-
-
-#' Config survey
-#' @inheritDotParams load_survey
-#' @noRd
-#' @keywords internal
-
-config_survey <- function(...) {
-  match.call()[[1]]
 }
 
 

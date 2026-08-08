@@ -518,10 +518,6 @@ get_edition <- function(svy) {
   svy$get_edition()
 }
 
-get_weight <- function(svy, estimation_type = seq_along(svy$weight)) {
-  svy$weight[[estimation_type]]
-}
-
 get_info_weight <- function(svy) {
   info_weight <- c("")
 
@@ -556,11 +552,6 @@ get_info_weight <- function(svy) {
 
 get_type <- function(svy) {
   svy$get_type()
-}
-
-get_design <- function(self) {
-  self$ensure_design()
-  self$design
 }
 
 set_edition <- function(svy, new_edition, .copy = use_copy_default()) {

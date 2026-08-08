@@ -782,18 +782,6 @@ test_that("view_graph with custom init_step label", {
   expect_true(inherits(g, "visNetwork") || inherits(g, "htmlwidget"))
 })
 
-# ── new_step helper ──────────────────────────────────────────────────────────
-
-test_that("new_step errors when recode type missing new_var", {
-  expect_error(
-    metasurvey.core:::new_step(
-      id = 1, name = "test", description = "test",
-      type = "recode"
-    ),
-    class = "metasurvey_error_step"
-  )
-})
-
 # ── Internal compute/recode with .copy=FALSE + lazy=TRUE paths ───────────────
 
 test_that("internal compute with .copy=FALSE and lazy=TRUE returns survey unchanged", {

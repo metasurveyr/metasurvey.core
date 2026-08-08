@@ -541,29 +541,14 @@ workflow_pool <- function(survey, ..., estimation_type = "monthly",
 }
 
 cat_estimation <- function(estimation, call, level = 0.95) {
-  class_estimation <- class(estimation)[1]
-
-  if (!class_estimation %in% c("svyby", "svyratio", "cvystat")) {
-    class_estimation <- "default"
-  }
-
-  do.call(
-    paste0(
-      "cat_estimation.",
-      class_estimation
-    ),
-    list(
-      estimation,
-      call,
-      level = level
-    )
-  )
+  UseMethod("cat_estimation")
 }
 
 #' cat_estimation_svyby
 #' @param estimation Estimation
 #' @param call Call
 #' @importFrom data.table data.table melt
+#' @exportS3Method cat_estimation svyby
 #' @keywords internal
 #' @noRd
 
@@ -657,6 +642,7 @@ cat_estimation.svyby <- function(estimation, call, level = 0.95) {
 #' @importFrom data.table data.table
 #' @importFrom survey SE cv
 #' @importFrom stats coef
+#' @exportS3Method cat_estimation default
 #' @keywords internal
 
 cat_estimation.default <- function(estimation, call, level = 0.95) {
@@ -682,6 +668,7 @@ cat_estimation.default <- function(estimation, call, level = 0.95) {
 #' @param estimation cvystat object from convey functions
 #' @param call Call string
 #' @importFrom data.table data.table
+#' @exportS3Method cat_estimation cvystat
 #' @keywords internal
 #' @noRd
 cat_estimation.cvystat <- function(estimation, call, level = 0.95) {
@@ -719,6 +706,7 @@ cat_estimation.cvystat <- function(estimation, call, level = 0.95) {
 #' @importFrom data.table data.table
 #' @importFrom survey SE cv
 #' @importFrom stats coef
+#' @exportS3Method cat_estimation svyratio
 #' @keywords internal
 #' @noRd
 

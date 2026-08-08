@@ -164,13 +164,6 @@ test_that("validate_recipe returns FALSE when edition differs", {
   expect_false(result)
 })
 
-# --- config_survey ---
-
-test_that("config_survey returns the call name", {
-  result <- metasurvey.core:::config_survey(a = 1, b = "x")
-  expect_true(!is.null(result))
-})
-
 # --- read_file ---
 
 test_that("read_file reads a CSV file correctly", {

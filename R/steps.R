@@ -2817,41 +2817,6 @@ view_graph <- function(svy, init_step = "Load survey") {
 }
 
 
-new_step <- function(id = 1, name, description,
-                     depends = NULL, type,
-                     new_var = NULL, ...) {
-  if (type == "recode") {
-    if (is.null(new_var)) {
-      msvy_abort(
-        "new_var is required for recode",
-        class = "metasurvey_error_step"
-      )
-    }
-  }
-
-  call <- do.call(
-    paste0(
-      "step_",
-      type
-    ),
-    args = list(
-      svy = survey_empty(),
-      new_var = new_var,
-      ...
-    )
-  )
-
-  list(
-    id = id,
-    name = name,
-    description = description,
-    depends = depends,
-    type = type,
-    new_var = new_var,
-    call = call
-  )
-}
-
 #' @title Find dependencies
 #' @description Find dependencies
 #' @param call_expr Call expression

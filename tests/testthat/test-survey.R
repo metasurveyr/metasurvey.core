@@ -524,12 +524,6 @@ test_that("set_type standalone with .copy=FALSE modifies in place", {
   expect_equal(s2$type, "eph")
 })
 
-test_that("get_weight returns weight info", {
-  s <- make_test_survey()
-  w <- metasurvey.core:::get_weight(s)
-  expect_equal(w, "w")
-})
-
 test_that("get_edition standalone returns edition", {
   s <- make_test_survey()
   ed <- metasurvey.core:::get_edition(s)
@@ -1034,12 +1028,13 @@ test_that("update_design warns on design length mismatch", {
 
 # ── Additional survey coverage push ──────────────────────────────────────────
 
-test_that("get_design initializes and returns design list", {
+test_that("ensure_design initializes the design list", {
   s <- make_test_survey()
-  result <- get_design(s)
+  s$ensure_design()
+  result <- s$design
   expect_true(is.list(result))
   expect_true("annual" %in% names(result))
-  expect_true(inherits(result$annual, "survey.design"))
+  expect_s3_class(result$annual, "survey.design")
 })
 
 test_that("Survey with multiple weight types has proper info_weight", {
