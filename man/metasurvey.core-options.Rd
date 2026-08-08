@@ -5,7 +5,7 @@
 \title{Options used by metasurvey.core}
 \value{
 No return value. This topic documents the global options
-recognised by metasurvey.core and their defaults.
+recognized by metasurvey.core and their defaults.
 }
 \description{
 All behavior toggles of metasurvey.core are controlled through R
