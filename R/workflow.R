@@ -170,7 +170,8 @@ workflow <- function(svy, ..., estimation_type = "monthly",
   if (is(svy, "Survey")) {
     svy <- list(svy)
   }
-  if (!is.list(svy) || length(svy) == 0 || !all(vapply(svy, function(x) is(x, "Survey"), logical(1)))) {
+  if (!is.list(svy) || length(svy) == 0 ||
+    !all(vapply(svy, is, logical(1), "Survey"))) {
     stop_input(
       "workflow", "svy",
       "must be a Survey, a list of Survey objects, or a PoolSurvey",
@@ -382,9 +383,9 @@ workflow_panel <- function(survey, ...,
 
 workflow_pool <- function(survey, ..., estimation_type = "monthly",
                           level = 0.95) {
-  if (grepl(":", estimation_type)) {
-    estimation_type_first <- strsplit(estimation_type, ":")[[1]][1]
-    estimation_type <- strsplit(estimation_type, ":")[[1]][2]
+  if (grepl(":", estimation_type, fixed = TRUE)) {
+    estimation_type_first <- strsplit(estimation_type, ":", fixed = TRUE)[[1]][1]
+    estimation_type <- strsplit(estimation_type, ":", fixed = TRUE)[[1]][2]
   } else {
     estimation_type <- estimation_type
     estimation_type_first <- estimation_type
@@ -536,7 +537,7 @@ workflow_pool <- function(survey, ..., estimation_type = "monthly",
   }
   paste0(
     name_function,
-    " [", paste(deparse(domain_expr), collapse = " "), "]"
+    " [", deparse1(domain_expr), "]"
   )
 }
 

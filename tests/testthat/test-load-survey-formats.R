@@ -73,7 +73,7 @@ test_that("load_survey loads CSV and creates Survey", {
     svy_edition = "2023",
     svy_weight = add_weight(annual = "w")
   )
-  expect_true(inherits(svy, "Survey"))
+  expect_s3_class(svy, "Survey")
   expect_equal(nrow(svy$data), 10)
   expect_equal(svy$type, "test")
 })
@@ -90,7 +90,7 @@ test_that("load_survey loads RDS and creates Survey", {
     svy_edition = "2023",
     svy_weight = add_weight(annual = "w")
   )
-  expect_true(inherits(svy, "Survey"))
+  expect_s3_class(svy, "Survey")
   expect_equal(nrow(svy$data), 10)
 })
 
@@ -120,8 +120,8 @@ test_that("load_survey attaches valid recipe without bake", {
     recipes = rec
   )
 
-  expect_true(inherits(svy, "Survey"))
-  expect_true(inherits(svy$recipes, "Recipe"))
+  expect_s3_class(svy, "Survey")
+  expect_s3_class(svy$recipes, "Recipe")
 })
 
 test_that("load_survey with invalid recipe shows message", {
@@ -180,8 +180,8 @@ test_that("load_survey validates recipe in list(recipe) format", {
     recipes = list(rec)
   )
 
-  expect_true(inherits(svy, "Survey"))
-  expect_true(length(svy$recipes) >= 1)
+  expect_s3_class(svy, "Survey")
+  expect_gte(length(svy$recipes), 1)
 })
 
 test_that("load_survey validates multi-edition recipe", {
@@ -210,8 +210,8 @@ test_that("load_survey validates multi-edition recipe", {
     recipes = list(rec)
   )
 
-  expect_true(inherits(svy, "Survey"))
-  expect_true(length(svy$recipes) >= 1)
+  expect_s3_class(svy, "Survey")
+  expect_gte(length(svy$recipes), 1)
 })
 
 test_that("read_file with convert=TRUE passes through requireNamespace check", {

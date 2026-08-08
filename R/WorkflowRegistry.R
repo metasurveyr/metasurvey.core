@@ -174,20 +174,19 @@ WorkflowRegistry <- R6::R6Class(
       if (length(s$by_survey_type) > 0) {
         cat(
           "  Survey types:",
-          paste(names(s$by_survey_type), collapse = ", "),
+          toString(names(s$by_survey_type)),
           "\n"
         )
       }
       if (length(s$by_certification) > 0) {
-        cat("  Certification:", paste(
+        cat("  Certification:", toString(
           vapply(
             names(s$by_certification),
             function(k) {
               paste0(k, ": ", s$by_certification[[k]])
             },
             character(1)
-          ),
-          collapse = ", "
+          )
         ), "\n")
       }
       invisible(self)

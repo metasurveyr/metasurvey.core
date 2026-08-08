@@ -288,20 +288,19 @@ RecipeRegistry <- R6::R6Class(
       if (length(s$by_category) > 0) {
         cat(
           "  Categories:",
-          paste(names(s$by_category), collapse = ", "),
+          toString(names(s$by_category)),
           "\n"
         )
       }
       if (length(s$by_certification) > 0) {
-        cat("  Certification:", paste(
+        cat("  Certification:", toString(
           vapply(
             names(s$by_certification),
             function(k) {
               paste0(k, ": ", s$by_certification[[k]])
             },
             character(1)
-          ),
-          collapse = ", "
+          )
         ), "\n")
       }
       invisible(self)

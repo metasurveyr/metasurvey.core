@@ -52,7 +52,7 @@ test_that("workflow auto-wraps a single Survey", {
     estimation_type = "annual"
   )
   expect_s3_class(result, "data.table")
-  expect_true(nrow(result) >= 1)
+  expect_gte(nrow(result), 1)
 })
 
 test_that("workflow rejects non-Survey svy with a clear message", {

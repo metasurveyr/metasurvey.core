@@ -245,7 +245,7 @@ Survey <- R6Class(
             paste0(
               "Recipe '", recipe$name,
               "' depends on variables not present in survey: ",
-              paste(missing_vars, collapse = ", "),
+              toString(missing_vars),
               ". Recipe added but bake_recipes() may fail."
             ),
             class = "metasurvey_warning_recipe"
@@ -519,7 +519,7 @@ get_edition <- function(svy) {
 }
 
 get_info_weight <- function(svy) {
-  info_weight <- c("")
+  info_weight <- ""
 
   for (i in seq_along(svy$weight)) {
     if (is.character(svy$weight[[i]]) == 1) {
@@ -691,7 +691,7 @@ get_metadata <- function(self) {
       "None",
       paste0(
         "\n  - ",
-        paste0(names(self$steps), collapse = "\n  - ")
+        paste(names(self$steps), collapse = "\n  - ")
       )
     )
     periodicity <- self$periodicity
@@ -733,10 +733,7 @@ get_metadata <- function(self) {
         if (length(self$get_steps()$implantation) > 0) {
           paste0(
             "implantation: (",
-            paste(
-              names(self$get_steps()$implantation),
-              collapse = ", "
-            ),
+            toString(names(self$get_steps()$implantation)),
             ")\n"
           )
         } else {
@@ -748,12 +745,9 @@ get_metadata <- function(self) {
           ))) {
           paste0(
             "follow_up: (",
-            paste(
-              row.names(
-                self$get_steps()$follow_up
-              ),
-              collapse = ", "
-            ),
+            toString(row.names(
+              self$get_steps()$follow_up
+            )),
             ")\n"
           )
         } else {
@@ -803,7 +797,7 @@ get_metadata <- function(self) {
             "None",
             paste0(
               "\n  - ",
-              paste0(names(x[[1]]$steps), collapse = "\n  - ")
+              paste(names(x[[1]]$steps), collapse = "\n  - ")
             )
           )
         },
@@ -935,7 +929,7 @@ cat_design <- function(self) {
     character(1)
   )
 
-  output <- paste0(output_list, collapse = "")
+  output <- paste(output_list, collapse = "")
 
   return(output)
 }
@@ -1162,7 +1156,7 @@ bake_recipes <- function(svy) {
           paste0(
             "Cannot bake recipe '", recipe$name,
             "': missing required variables: ",
-            paste(missing_vars, collapse = ", ")
+            toString(missing_vars)
           ),
           class = "metasurvey_error_recipe"
         )

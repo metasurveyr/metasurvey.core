@@ -216,7 +216,7 @@ wf2 <- RecipeWorkflow$new(
   survey_type     = "ech",
   edition         = "2023",
   estimation_type = "annual",
-  recipe_ids      = c("labor_force_recipe_001"),
+  recipe_ids      = "labor_force_recipe_001",
   calls           = list("survey::svymean(~employed, na.rm = TRUE)")
 )
 
@@ -270,7 +270,7 @@ svy_full <- Survey$new(
 # 2. Apply steps: compute derived variables
 svy_full <- step_compute(svy_full,
   api_growth = api00 - api99,
-  high_growth = ifelse(api00 - api99 > 50, 1L, 0L),
+  high_growth = as.integer(api00 - api99 > 50),
   comment = "API score growth indicators"
 )
 

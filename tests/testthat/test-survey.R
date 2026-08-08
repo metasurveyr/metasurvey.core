@@ -20,7 +20,7 @@ test_that("Survey$new() creates object with correct fields", {
   s <- s %>%
     step_compute(y = x * 2) %>%
     bake_steps()
-  expect_true(length(s$design) > 0)
+  expect_gt(length(s$design), 0)
 })
 
 test_that("get_data() returns underlying data", {
@@ -81,7 +81,7 @@ test_that("add_step registers steps correctly", {
     depends_on = list()
   )
   s$add_step(step)
-  expect_equal(length(s$steps), 1)
+  expect_length(s$steps, 1)
 })
 
 test_that("Survey design is created from weight", {
@@ -90,8 +90,8 @@ test_that("Survey design is created from weight", {
   s <- s %>%
     step_compute(z = age * 2) %>%
     bake_steps()
-  expect_true(length(s$design) >= 1)
-  expect_true(inherits(s$design[[1]], "survey.design"))
+  expect_gte(length(s$design), 1)
+  expect_s3_class(s$design[[1]], "survey.design")
 })
 
 test_that("cat_design returns string without error", {
@@ -108,7 +108,7 @@ test_that("cat_recipes returns 'None' for survey without recipes", {
 
 test_that("get_steps returns empty list for new survey", {
   s <- make_test_survey()
-  expect_equal(length(get_steps(s)), 0)
+  expect_length(get_steps(s), 0)
 })
 
 test_that("Survey stores edition correctly", {
@@ -123,7 +123,7 @@ test_that("edition field contains survey edition", {
 
 test_that("weights field contains weight information", {
   s <- make_test_survey()
-  expect_true(!is.null(s$weight))
+  expect_false(is.null(s$weight))
 })
 
 test_that("weight names can be accessed", {
@@ -155,13 +155,13 @@ test_that("Survey handles multiple weights", {
     weight = add_weight(annual = "w_annual", monthly = "w_monthly")
   )
 
-  expect_equal(length(s$weight), 2)
+  expect_length(s$weight, 2)
 
   # Trigger design initialization
   s <- s %>%
     step_compute(y = id * 2) %>%
     bake_steps()
-  expect_equal(length(s$design), 2)
+  expect_length(s$design, 2)
 })
 
 test_that("Survey clone creates independent copy", {
@@ -196,7 +196,7 @@ test_that("cat_design_type returns correct design description", {
 
   result <- tryCatch(
     {
-      metasurvey.core:::cat_design_type(s, "annual")
+      cat_design_type(s, "annual")
     },
     error = function(e) NULL
   )
@@ -284,7 +284,7 @@ test_that("cat_recipes handles multiple recipes", {
 test_that("Survey handles empty recipes list", {
   s <- make_test_survey()
   s$recipes <- list()
-  expect_equal(length(s$recipes), 0)
+  expect_length(s$recipes, 0)
 })
 
 test_that("Survey set methods work correctly", {
@@ -307,8 +307,8 @@ test_that("Survey design is correctly structured", {
     step_compute(z = age * 2) %>%
     bake_steps()
 
-  expect_true(is.list(s$design))
-  expect_true(length(s$design) >= 1)
+  expect_type(s$design, "list")
+  expect_gte(length(s$design), 1)
 
   # Check design names match weight names
   expect_true(all(names(s$design) %in% names(s$weight)))
@@ -316,14 +316,14 @@ test_that("Survey design is correctly structured", {
 
 test_that("Survey periodicity is set correctly", {
   s <- make_test_survey()
-  expect_true(!is.null(s$periodicity))
+  expect_false(is.null(s$periodicity))
   expect_type(s$periodicity, "character")
 })
 
 test_that("Survey workflows initialize as empty list", {
   s <- make_test_survey()
-  expect_true(is.list(s$workflows))
-  expect_equal(length(s$workflows), 0)
+  expect_type(s$workflows, "list")
+  expect_length(s$workflows, 0)
 })
 
 test_that("Survey with replicate weights configuration", {
@@ -333,8 +333,8 @@ test_that("Survey with replicate weights configuration", {
     replicate_pattern = "wr\\d+",
     replicate_type = "bootstrap"
   ))
-  expect_true(is.list(w))
-  expect_true(!is.null(w$annual$replicate_pattern))
+  expect_type(w, "list")
+  expect_false(is.null(w$annual$replicate_pattern))
   expect_equal(w$annual$replicate_type, "bootstrap")
 })
 
@@ -352,7 +352,7 @@ test_that("set_data replaces survey data", {
 test_that("Survey$set_weight updates weight", {
   s <- make_test_survey()
   s$set_weight(add_weight(annual = "w"))
-  expect_true(!is.null(s$weight))
+  expect_false(is.null(s$weight))
 })
 
 # --- add_recipe ---
@@ -366,7 +366,7 @@ test_that("add_recipe adds recipe when edition matches", {
     id = "r1", doi = NULL, topic = NULL
   )
   s$add_recipe(r)
-  expect_equal(length(s$recipes), 1)
+  expect_length(s$recipes, 1)
 })
 
 test_that("add_recipe allows different editions but errors on type mismatch", {
@@ -394,7 +394,7 @@ test_that("add_recipe allows different editions but errors on type mismatch", {
 
 test_that("get_info_weight returns info for simple weight", {
   s <- make_test_survey()
-  info <- metasurvey.core:::get_info_weight(s)
+  info <- get_info_weight(s)
   expect_true(is.character(info) || inherits(info, "glue"))
   expect_true(grepl("annual", info, ignore.case = TRUE))
 })
@@ -404,9 +404,9 @@ test_that("get_info_weight returns info for simple weight", {
 test_that("design_active recomputes design", {
   s <- make_test_survey()
   d <- s$design_active
-  expect_true(is.list(d))
-  expect_true(length(d) >= 1)
-  expect_true(inherits(d[[1]], "survey.design"))
+  expect_type(d, "list")
+  expect_gte(length(d), 1)
+  expect_s3_class(d[[1]], "survey.design")
 })
 
 # --- cat_design_type ---
@@ -436,7 +436,7 @@ test_that("add_workflow stores workflow", {
   s <- make_test_survey()
   wf <- list(name = "test_wf", steps = list())
   s$add_workflow(wf)
-  expect_equal(length(s$workflows), 1)
+  expect_length(s$workflows, 1)
   expect_true("test_wf" %in% names(s$workflows))
 })
 
@@ -445,7 +445,7 @@ test_that("add_workflow stores workflow", {
 test_that("Survey$head returns data head", {
   s <- make_test_survey()
   h <- s$head()
-  expect_true(nrow(h) <= 6)
+  expect_lte(nrow(h), 6)
 })
 
 test_that("Survey$str does not error", {
@@ -485,7 +485,7 @@ test_that("update_design refreshes design variables", {
 test_that("set_data standalone with .copy=TRUE returns clone", {
   s <- make_test_survey()
   new_dt <- data.table::data.table(id = 1:3, w = 1)
-  s2 <- metasurvey.core:::set_data(s, new_dt, .copy = TRUE)
+  s2 <- set_data(s, new_dt, .copy = TRUE)
   expect_equal(nrow(get_data(s2)), 3)
   # Original should be unchanged
   expect_equal(nrow(get_data(s)), 10)
@@ -494,45 +494,45 @@ test_that("set_data standalone with .copy=TRUE returns clone", {
 test_that("set_data standalone with .copy=FALSE modifies in place", {
   s <- make_test_survey()
   new_dt <- data.table::data.table(id = 1:3, w = 1)
-  s2 <- metasurvey.core:::set_data(s, new_dt, .copy = FALSE)
+  s2 <- set_data(s, new_dt, .copy = FALSE)
   expect_equal(nrow(get_data(s2)), 3)
 })
 
 test_that("set_edition standalone with .copy=TRUE returns clone", {
   s <- make_test_survey()
-  s2 <- metasurvey.core:::set_edition(s, "2025", .copy = TRUE)
+  s2 <- set_edition(s, "2025", .copy = TRUE)
   expect_equal(s2$edition, "2025")
   expect_equal(as.character(s$edition), "2023")
 })
 
 test_that("set_edition standalone with .copy=FALSE modifies in place", {
   s <- make_test_survey()
-  s2 <- metasurvey.core:::set_edition(s, "2025", .copy = FALSE)
+  s2 <- set_edition(s, "2025", .copy = FALSE)
   expect_equal(s2$edition, "2025")
 })
 
 test_that("set_type standalone with .copy=TRUE returns clone", {
   s <- make_test_survey()
-  s2 <- metasurvey.core:::set_type(s, "eph", .copy = TRUE)
+  s2 <- set_type(s, "eph", .copy = TRUE)
   expect_equal(s2$type, "eph")
   expect_equal(s$type, "ech")
 })
 
 test_that("set_type standalone with .copy=FALSE modifies in place", {
   s <- make_test_survey()
-  s2 <- metasurvey.core:::set_type(s, "eph", .copy = FALSE)
+  s2 <- set_type(s, "eph", .copy = FALSE)
   expect_equal(s2$type, "eph")
 })
 
 test_that("get_edition standalone returns edition", {
   s <- make_test_survey()
-  ed <- metasurvey.core:::get_edition(s)
+  ed <- get_edition(s)
   expect_equal(as.character(ed), "2023")
 })
 
 test_that("get_type standalone returns type", {
   s <- make_test_survey()
-  tp <- metasurvey.core:::get_type(s)
+  tp <- get_type(s)
   expect_equal(tp, "ech")
 })
 
@@ -621,7 +621,7 @@ test_that("get_metadata handles Date edition", {
 test_that("set_weight standalone with .copy=TRUE returns clone", {
   s <- make_test_survey()
   s2 <- suppressMessages(
-    metasurvey.core:::set_weight(s, add_weight(annual = "w"), .copy = TRUE)
+    set_weight(s, add_weight(annual = "w"), .copy = TRUE)
   )
   expect_s3_class(s2, "Survey")
 })
@@ -630,7 +630,7 @@ test_that("set_weight standalone with .copy=FALSE triggers comparison error on l
   s <- make_test_survey()
   # set_weight .copy=FALSE path has svy$weight == new_weight which fails for lists
   expect_error(
-    metasurvey.core:::set_weight(s, s$weight, .copy = FALSE),
+    set_weight(s, s$weight, .copy = FALSE),
     "comparison.*not implemented|not meaningful"
   )
 })
@@ -688,7 +688,7 @@ test_that("Survey$new with PSU creates proper design", {
   s <- s %>%
     step_compute(y = id * 2) %>%
     bake_steps()
-  expect_true(inherits(s$design[[1]], "survey.design"))
+  expect_s3_class(s$design[[1]], "survey.design")
 })
 
 # --- add_recipe with depends_on warning ---
@@ -830,7 +830,7 @@ test_that("shallow_clone copies design when initialized", {
 
   s2 <- s$shallow_clone()
   expect_true(s2$design_initialized)
-  expect_true(!is.null(s2$design))
+  expect_false(is.null(s2$design))
 })
 
 test_that("shallow_clone copies metadata", {
@@ -845,7 +845,7 @@ test_that("shallow_clone copies metadata", {
   s$periodicity <- "annual"
 
   s2 <- s$shallow_clone()
-  expect_equal(length(s2$steps), 1)
+  expect_length(s2$steps, 1)
   expect_equal(s2$periodicity, "annual")
 })
 
@@ -857,8 +857,8 @@ test_that("ensure_design initializes design from weight", {
 
   s$ensure_design()
   expect_true(s$design_initialized)
-  expect_true(is.list(s$design))
-  expect_true(inherits(s$design[[1]], "survey.design"))
+  expect_type(s$design, "list")
+  expect_s3_class(s$design[[1]], "survey.design")
 })
 
 test_that("ensure_design with PSU creates design with PSU formula", {
@@ -873,7 +873,7 @@ test_that("ensure_design with PSU creates design with PSU formula", {
 
   s$ensure_design()
   expect_true(s$design_initialized)
-  expect_true(inherits(s$design[[1]], "survey.design"))
+  expect_s3_class(s$design[[1]], "survey.design")
 })
 
 test_that("ensure_design is idempotent", {
@@ -889,9 +889,9 @@ test_that("ensure_design is idempotent", {
 
 test_that("get_info_weight returns formatted weight info", {
   s <- make_test_survey()
-  info <- metasurvey.core:::get_info_weight(s)
-  expect_true(nchar(info) > 0)
-  expect_true(grepl("Simple design", info))
+  info <- get_info_weight(s)
+  expect_gt(nchar(info), 0)
+  expect_true(grepl("Simple design", info, fixed = TRUE))
 })
 
 # --- set_weight standalone with actual different weight ---
@@ -905,7 +905,7 @@ test_that("set_weight standalone .copy=FALSE with different weight works", {
   )
 
   # Changing to a different weight column should work
-  s2 <- metasurvey.core:::set_weight(s, add_weight(annual = "w2"), .copy = TRUE)
+  s2 <- set_weight(s, add_weight(annual = "w2"), .copy = TRUE)
   expect_equal(s2$weight$annual, "w2")
 })
 
@@ -913,9 +913,9 @@ test_that("set_weight standalone .copy=FALSE with different weight works", {
 
 test_that("get_info_weight formats simple weight info", {
   s <- make_test_survey()
-  info <- metasurvey.core:::get_info_weight(s)
+  info <- get_info_weight(s)
   expect_true(is.character(info) || inherits(info, "glue"))
-  expect_true(grepl("annual", info))
+  expect_true(grepl("annual", info, fixed = TRUE))
 })
 
 test_that("Survey$set_edition and set_type update fields", {
@@ -948,7 +948,7 @@ test_that("set_weight with .copy=FALSE and list comparison errors", {
   s <- make_test_survey()
   # Known limitation: list == list comparison not implemented
   expect_error(
-    metasurvey.core:::set_weight(s, s$weight, .copy = FALSE),
+    set_weight(s, s$weight, .copy = FALSE),
     "not implemented"
   )
 })
@@ -993,8 +993,8 @@ test_that("cat_design returns lazy message when design not initialized", {
 test_that("cat_design_type returns design class after initialization", {
   s <- make_test_survey()
   s$ensure_design()
-  result <- metasurvey.core:::cat_design_type(s, "annual")
-  expect_true(is.character(result))
+  result <- cat_design_type(s, "annual")
+  expect_type(result, "character")
 })
 
 test_that("Survey$print with numeric edition formats correctly", {
@@ -1032,7 +1032,7 @@ test_that("ensure_design initializes the design list", {
   s <- make_test_survey()
   s$ensure_design()
   result <- s$design
-  expect_true(is.list(result))
+  expect_type(result, "list")
   expect_true("annual" %in% names(result))
   expect_s3_class(result$annual, "survey.design")
 })
@@ -1040,8 +1040,8 @@ test_that("ensure_design initializes the design list", {
 test_that("Survey with multiple weight types has proper info_weight", {
   s <- make_test_survey()
   s$weight <- add_weight(annual = "w", quarterly = "w")
-  info <- metasurvey.core:::get_info_weight(s)
-  expect_true(is.character(info))
+  info <- get_info_weight(s)
+  expect_type(info, "character")
   expect_match(info, "annual", ignore.case = TRUE)
   expect_match(info, "quarterly", ignore.case = TRUE)
 })
@@ -1076,7 +1076,7 @@ test_that("ensure_design with strata creates stratified design", {
   )
   s$ensure_design()
   expect_true(s$design_initialized)
-  expect_true(inherits(s$design[[1]], "survey.design"))
+  expect_s3_class(s$design[[1]], "survey.design")
   expect_false(is.null(s$design[[1]]$call$strata))
 })
 
@@ -1091,7 +1091,7 @@ test_that("ensure_design with strata + PSU works", {
     weight = add_weight(annual = "w")
   )
   s$ensure_design()
-  expect_true(inherits(s$design[[1]], "survey.design"))
+  expect_s3_class(s$design[[1]], "survey.design")
 })
 
 test_that("ensure_design errors on nonexistent strata variable", {
@@ -1145,6 +1145,6 @@ test_that("workflow with stratified design produces results", {
     survey::svymean(~api00, na.rm = TRUE),
     estimation_type = "annual"
   )
-  expect_true(nrow(result) > 0)
-  expect_true(result$value > 0)
+  expect_gt(nrow(result), 0)
+  expect_gt(result$value, 0)
 })

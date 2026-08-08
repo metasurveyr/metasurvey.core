@@ -152,7 +152,7 @@ test_that("get_implantation errors on non-RotativePanelSurvey", {
 test_that("get_follow_up returns follow-up surveys", {
   panel <- make_test_panel()
   result <- get_follow_up(panel)
-  expect_true(is.list(result))
+  expect_type(result, "list")
 })
 
 test_that("get_follow_up errors on non-RotativePanelSurvey", {
@@ -170,13 +170,13 @@ test_that("PoolSurvey get_surveys with period returns specific period", {
   surveys_data <- list(annual = list(a = 1, b = 2), monthly = list(c = 3))
   pool <- PoolSurvey$new(surveys = list(surveys_data))
   result <- pool$get_surveys(period = "annual")
-  expect_true(!is.null(result))
+  expect_false(is.null(result))
 })
 
 test_that("PoolSurvey get_surveys without period returns all", {
   pool <- PoolSurvey$new(surveys = list(annual = list()))
   result <- pool$get_surveys()
-  expect_true(is.list(result))
+  expect_type(result, "list")
 })
 
 # --- RotativePanelSurvey print ---
@@ -192,7 +192,7 @@ test_that("RotativePanelSurvey accessors return stored values", {
   panel <- make_test_panel()
   expect_true(is.list(panel$get_recipes()) || is.null(panel$get_recipes()))
   expect_true(is.list(panel$get_workflows()) || is.null(panel$get_workflows()))
-  expect_true(is.null(panel$get_design()))
+  expect_null(panel$get_design())
 })
 
 # --- step_compute on RotativePanelSurvey ---

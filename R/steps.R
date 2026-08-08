@@ -47,11 +47,11 @@ compute <- function(svy, ..., .by = NULL,
 
 
   if (!lazy) {
-    if (!.copy) {
-      .data <- get_data(svy)
-    } else {
+    if (.copy) {
       .clone <- svy$shallow_clone()
       .data <- get_data(.clone)
+    } else {
+      .data <- get_data(svy)
     }
 
     # is.call()/is.name() (no methods::is): un bloque `{ }` o un `if`
@@ -98,16 +98,16 @@ compute <- function(svy, ..., .by = NULL,
     }
 
 
-    if (!.copy) {
-      return(set_data(svy, .data))
-    } else {
+    if (.copy) {
       return(set_data(.clone, .data))
+    } else {
+      return(set_data(svy, .data))
     }
   } else {
-    if (!.copy) {
-      return(svy)
-    } else {
+    if (.copy) {
       return(svy$shallow_clone())
+    } else {
+      return(svy)
     }
   }
 }
@@ -123,11 +123,11 @@ recode <- function(svy, new_var, ...,
                    lazy = lazy_default()) {
   .penv <- parent.frame()
   if (!lazy) {
-    if (!.copy) {
-      .data <- svy$get_data()
-    } else {
+    if (.copy) {
       .clone <- svy$shallow_clone()
       .data <- get_data(.clone)
+    } else {
+      .data <- svy$get_data()
     }
 
     .exprs <- substitute(list(...))
@@ -185,16 +185,16 @@ recode <- function(svy, new_var, ...,
       }
     }
 
-    if (!.copy) {
-      return(set_data(svy, .data))
-    } else {
+    if (.copy) {
       return(set_data(.clone, .data))
+    } else {
+      return(set_data(svy, .data))
     }
   } else {
-    if (!.copy) {
-      return(svy)
-    } else {
+    if (.copy) {
       return(svy$shallow_clone())
+    } else {
+      return(svy)
     }
   }
 }
@@ -204,11 +204,11 @@ filter_rows <- function(svy, ..., .by = NULL,
                         .copy = use_copy_default(),
                         lazy = lazy_default()) {
   if (!lazy) {
-    if (!.copy) {
-      .data <- get_data(svy)
-    } else {
+    if (.copy) {
       .clone <- svy$shallow_clone()
       .data <- get_data(.clone)
+    } else {
+      .data <- get_data(svy)
     }
 
     .conditions <- substitute(list(...))
@@ -230,16 +230,16 @@ filter_rows <- function(svy, ..., .by = NULL,
       .data <- .data[eval(combined, .data, parent.frame())]
     }
 
-    if (!.copy) {
-      return(set_data(svy, .data))
-    } else {
+    if (.copy) {
       return(set_data(.clone, .data))
+    } else {
+      return(set_data(svy, .data))
     }
   } else {
-    if (!.copy) {
-      return(svy)
-    } else {
+    if (.copy) {
       return(svy$shallow_clone())
+    } else {
+      return(svy)
     }
   }
 }
@@ -382,11 +382,11 @@ step_compute <- function(
 
     if (length(.new_vars) > 0) {
       step <- Step$new(
-        name = paste("Compute:", paste(.new_vars, collapse = ", ")),
+        name = paste("Compute:", toString(.new_vars)),
         edition = get_edition(.svy_after),
         survey_type = get_type(.svy_after),
         type = "compute",
-        new_var = paste(.new_vars, collapse = ", "),
+        new_var = toString(.new_vars),
         exprs = substitute(list(...)),
         call = .call,
         svy_before = NULL,
@@ -403,7 +403,7 @@ step_compute <- function(
         msvy_abort(
           sprintf(
             "Step validation failed for compute step creating: %s",
-            paste(.new_vars, collapse = ", ")
+            toString(.new_vars)
           ),
           class = "metasurvey_error_step"
         )
@@ -421,11 +421,11 @@ step_compute <- function(
     .new_vars <- .new_vars[not_in_data]
 
     step <- Step$new(
-      name = paste("New variable:", paste(.new_vars, collapse = ", ")),
+      name = paste("New variable:", toString(.new_vars)),
       edition = get_edition(svy),
       survey_type = get_type(svy),
       type = "compute",
-      new_var = paste(.new_vars, collapse = ", "),
+      new_var = toString(.new_vars),
       exprs = substitute(list(...)),
       call = .call,
       svy_before = NULL,
@@ -1081,7 +1081,7 @@ step_join <- function(
     msvy_abort(
       sprintf(
         "Join keys not found in survey: %s",
-        paste(miss_x, collapse = ", ")
+        toString(miss_x)
       ),
       class = "metasurvey_error_step"
     )
@@ -1090,7 +1090,7 @@ step_join <- function(
     msvy_abort(
       sprintf(
         "Join keys not found in x: %s",
-        paste(miss_y, collapse = ", ")
+        toString(miss_y)
       ),
       class = "metasurvey_error_step"
     )
@@ -1166,7 +1166,7 @@ step_join <- function(
   if (isTRUE(record)) {
     depends_on <- unique(by.x)
     step <- Step$new(
-      name = paste0("Join (", type, "): ", paste(by.x, collapse = ", ")),
+      name = paste0("Join (", type, "): ", toString(by.x)),
       edition = get_edition(out),
       survey_type = get_type(out),
       type = "step_join",
@@ -1338,7 +1338,7 @@ step_remove <- function(
     msvy_warn(
       sprintf(
         "Variables not found and cannot be removed: %s",
-        paste(missing, collapse = ", ")
+        toString(missing)
       ),
       class = "metasurvey_warning_step"
     )
@@ -1361,7 +1361,7 @@ step_remove <- function(
 
   if (isTRUE(record)) {
     step <- Step$new(
-      name = paste0("Remove: ", paste(var_names, collapse = ", ")),
+      name = paste0("Remove: ", toString(var_names)),
       edition = get_edition(out),
       survey_type = get_type(out),
       type = "step_remove",
@@ -1450,7 +1450,7 @@ step_rename <- function(
       return(svy)
     }
     new_names <- names(pairs)
-    if (is.null(new_names) || any(!nzchar(new_names))) {
+    if (is.null(new_names) || !all(nzchar(new_names))) {
       stop_input(
         "step_rename", "...",
         "must be named pairs of the form new_name = old_name"
@@ -1520,7 +1520,7 @@ step_rename <- function(
     msvy_abort(
       sprintf(
         "Variables to rename not found: %s",
-        paste(missing, collapse = ", ")
+        toString(missing)
       ),
       class = "metasurvey_error_step"
     )
@@ -1535,10 +1535,7 @@ step_rename <- function(
     step <- Step$new(
       name = paste0(
         "Rename: ",
-        paste(
-          sprintf("%s=%s", names(map), unname(map)),
-          collapse = ", "
-        )
+        toString(sprintf("%s=%s", names(map), unname(map)))
       ),
       edition = get_edition(out),
       survey_type = get_type(out),
@@ -1679,7 +1676,7 @@ step_validate <- function(
   }
 
   step <- Step$new(
-    name = paste0("Validate: ", paste(check_labels, collapse = ", ")),
+    name = paste0("Validate: ", toString(check_labels)),
     edition = get_edition(out),
     survey_type = get_type(out),
     type = "validate",
@@ -2046,7 +2043,7 @@ step_quantile <- function(
     msvy_abort(
       paste0(
         "step_quantile: variables not found in survey: ",
-        paste(missing_vars, collapse = ", ")
+        toString(missing_vars)
       ),
       class = "metasurvey_error_step"
     )
@@ -2216,7 +2213,7 @@ step_collapse <- function(
     msvy_abort(
       paste0(
         "step_collapse: grouping variables not found in survey: ",
-        paste(missing_vars, collapse = ", ")
+        toString(missing_vars)
       ),
       class = "metasurvey_error_step"
     )
@@ -2265,7 +2262,7 @@ step_collapse <- function(
   if (isTRUE(record)) {
     step <- Step$new(
       name = paste0(
-        "Collapse (", rule, "): ", paste(by, collapse = ", ")
+        "Collapse (", rule, "): ", toString(by)
       ),
       edition = get_edition(out),
       survey_type = get_type(out),

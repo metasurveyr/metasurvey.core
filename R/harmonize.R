@@ -53,7 +53,7 @@ topo_sort_recipes <- function(recipes) {
     msvy_abort(
       paste0(
         "Cycle detected in recipe dependencies: cannot sort recipes ",
-        paste(ids[!ids %in% sorted], collapse = ", ")
+        toString(ids[!ids %in% sorted])
       ),
       class = "metasurvey_error_recipe"
     )
@@ -157,7 +157,7 @@ harmonize <- function(surveys,
     msvy_abort(
       paste0(
         "'grouping' must be one of: ",
-        paste(valid_groupings, collapse = ", ")
+        toString(valid_groupings)
       ),
       class = "metasurvey_input_error"
     )

@@ -287,7 +287,7 @@ load_panel_survey <- function(
 
   if (!is.null(svy_weight_follow_up$replicate_path)) {
     path_file <- svy_weight_follow_up$replicate_path
-    path_file_final <- c()
+    path_file_final <- NULL
 
     for (i in path_file) {
       if (file.info(i)$isdir) {

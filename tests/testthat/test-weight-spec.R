@@ -55,7 +55,7 @@ test_that(".serialize_weight_spec handles mixed simple + replicate", {
   expect_equal(spec$annual$type, "simple")
   expect_equal(spec$quarterly$type, "simple")
   expect_equal(spec$monthly$type, "replicate")
-  expect_equal(length(spec), 3)
+  expect_length(spec, 3)
 })
 
 # --- .path_to_source ---
@@ -91,7 +91,7 @@ test_that(".path_to_source detects ANDA bootstrap semestral", {
 test_that(".path_to_source falls back to local for unknown paths", {
   src <- .path_to_source("/data/my_custom_weights.csv", "2023")
   expect_equal(src$provider, "local")
-  expect_true(!is.null(src$path_hint))
+  expect_false(is.null(src$path_hint))
 })
 
 test_that(".path_to_source handles NULL path", {
@@ -239,7 +239,7 @@ test_that("print.RecipeWorkflow shows weight info when present", {
   output <- capture.output(print(wf))
   output_text <- paste(output, collapse = "\n")
 
-  expect_true(grepl("W_ANO", output_text))
+  expect_true(grepl("W_ANO", output_text, fixed = TRUE))
   expect_true(grepl("Weight", output_text, ignore.case = TRUE))
 })
 
@@ -247,5 +247,5 @@ test_that("print.RecipeWorkflow does not show weight section when NULL", {
   wf <- RecipeWorkflow$new(name = "Plain WF")
   output <- capture.output(print(wf))
   output_text <- paste(output, collapse = "\n")
-  expect_false(grepl("Weights", output_text))
+  expect_false(grepl("Weights", output_text, fixed = TRUE))
 })
