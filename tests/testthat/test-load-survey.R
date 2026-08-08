@@ -200,6 +200,25 @@ test_that("load_survey errors when no args provided", {
   expect_error(load_survey(), class = "metasurvey_error_io")
 })
 
+test_that("load_survey rejects an unknown engine", {
+  tmp <- tempfile(fileext = ".csv")
+  on.exit(unlink(tmp), add = TRUE)
+  df <- data.frame(id = 1:3, w = 1)
+  write.csv(df, tmp, row.names = FALSE)
+
+  old_engine <- getOption("metasurvey.engine")
+  on.exit(options(metasurvey.engine = old_engine), add = TRUE)
+  options(metasurvey.engine = "arrow")
+
+  expect_error(
+    load_survey(
+      path = tmp, svy_type = "ech", svy_edition = "2023",
+      svy_weight = add_weight(annual = "w")
+    ),
+    class = "metasurvey_error_survey"
+  )
+})
+
 # --- load_survey with bake=TRUE ---
 
 test_that("load_survey with bake=TRUE applies recipes", {

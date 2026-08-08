@@ -171,7 +171,7 @@ workflow <- function(svy, ..., estimation_type = "monthly",
     svy <- list(svy)
   }
   if (!is.list(svy) || length(svy) == 0 ||
-    !all(vapply(svy, is, logical(1), "Survey"))) {
+        !all(vapply(svy, is, logical(1), "Survey"))) {
     stop_input(
       "workflow", "svy",
       "must be a Survey, a list of Survey objects, or a PoolSurvey",
