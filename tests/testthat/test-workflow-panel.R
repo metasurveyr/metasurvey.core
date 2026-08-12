@@ -184,8 +184,8 @@ test_that("annual:mean_of_months alias works on PoolSurvey", {
 })
 
 test_that(".edition_year handles Date, partial and plain editions", {
-  expect_equal(metasurvey.core:::.edition_year(as.Date("2023-05-01")), "2023")
-  expect_equal(metasurvey.core:::.edition_year("2024-11-01"), "2024")
-  expect_equal(metasurvey.core:::.edition_year("2023"), "2023")
-  expect_equal(metasurvey.core:::.edition_year("ech_2022"), "2022")
+  expect_equal(.edition_year(as.Date("2023-05-01")), "2023")
+  expect_equal(.edition_year("2024-11-01"), "2024")
+  expect_equal(.edition_year("2023"), "2023")
+  expect_equal(.edition_year("ech_2022"), "2022")
 })

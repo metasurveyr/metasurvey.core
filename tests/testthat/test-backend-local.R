@@ -45,7 +45,7 @@ test_that("local backend: publish writes to registry", {
   backend$publish(r)
 
   all <- backend$list_all()
-  expect_equal(length(all), 1)
+  expect_length(all, 1)
   expect_equal(all[[1]]$name, "Test Publish")
 })
 
@@ -57,7 +57,7 @@ test_that("local backend: search delegates to registry", {
   backend$publish(make_api_recipe("Income Study"))
 
   results <- backend$search("labor")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
   expect_equal(results[[1]]$name, "Labor Analysis")
 })
 
@@ -101,7 +101,7 @@ test_that("local backend: rank by downloads", {
   backend$publish(make_api_recipe("Mid", downloads = 50))
 
   ranked <- backend$rank(n = 2)
-  expect_equal(length(ranked), 2)
+  expect_length(ranked, 2)
   expect_equal(ranked[[1]]$name, "High")
 })
 
@@ -113,7 +113,7 @@ test_that("local backend: filter works", {
   backend$publish(make_api_recipe("B", topic = "income"))
 
   results <- backend$filter(survey_type = "ech")
-  expect_equal(length(results), 2)
+  expect_length(results, 2)
 })
 
 test_that("local backend: persistence across instances", {
@@ -128,7 +128,7 @@ test_that("local backend: persistence across instances", {
   # Second instance
   b2 <- RecipeBackend$new("local", path = tmp)
   b2$load()
-  expect_equal(length(b2$list_all()), 1)
+  expect_length(b2$list_all(), 1)
   expect_equal(b2$list_all()[[1]]$name, "Persistent")
 })
 
@@ -144,7 +144,7 @@ test_that("local backend: publish and retrieve roundtrip", {
   get_backend()$publish(r)
 
   all <- get_backend()$list_all()
-  expect_true(length(all) >= 1)
+  expect_gte(length(all), 1)
   expect_equal(all[[1]]$name, "api roundtrip")
 })
 
@@ -160,7 +160,7 @@ test_that("local backend: search filters by name", {
   get_backend()$publish(r2)
 
   found <- search_recipes("employment")
-  expect_true(length(found) >= 1)
+  expect_gte(length(found), 1)
 })
 
 # --- set_backend / get_backend ---

@@ -29,10 +29,11 @@ Authors@R:
         )
     )
 Description: The processing engine of the 'metasurvey' ecosystem. Provides
-    a step-based pipeline for reproducible survey data processing, building on
-    the 'survey' package for complex sampling designs. Supports rotating panels
-    with bootstrap replicate weights and a recipe system for reproducing data
-    transformation workflows across survey editions.
+    a step-based pipeline for reproducible processing of microdata from
+    complex surveys, building on the 'survey' package for design-based
+    estimation. Supports rotating panels with bootstrap replicate weights
+    and a recipe system for reproducing data transformation workflows
+    across editions of the same study.
 License: GPL (>= 3)
 Depends:
     R (>= 4.1)

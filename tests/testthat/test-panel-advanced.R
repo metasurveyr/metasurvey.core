@@ -5,7 +5,7 @@ test_that("extract_surveys validates periodicity", {
   ps <- make_test_panel()
 
   # Periodicity structure is a list with implantation and follow_up
-  expect_true(is.list(ps$periodicity))
+  expect_type(ps$periodicity, "list")
 })
 
 test_that("extract_surveys handles monthly periodicity", {
@@ -36,14 +36,14 @@ test_that("extract_surveys uses parallel processing", {
 
   # Should accept parallel flag
   # extract <- ps$extract_surveys(periodicity = "monthly", parallel = TRUE)
-  expect_true(is.logical(TRUE))
+  expect_type(TRUE, "logical")
 })
 
 test_that("extract_surveys validates date ranges", {
   ps <- make_test_panel()
 
   # Should have valid implantation data
-  expect_true(!is.null(ps$get_implantation()))
+  expect_false(is.null(ps$get_implantation()))
 })
 
 test_that("extract_surveys creates time windows", {
@@ -51,7 +51,7 @@ test_that("extract_surveys creates time windows", {
 
   # Should create windows based on periodicity
   impl <- ps$get_implantation()
-  expect_true(nrow(get_data(impl)) > 0)
+  expect_gt(nrow(get_data(impl)), 0)
 })
 
 test_that("extract_surveys handles follow-up data", {
@@ -59,21 +59,21 @@ test_that("extract_surveys handles follow-up data", {
 
   # Should have follow-up surveys
   fu <- ps$get_follow_up()
-  expect_true(length(fu) >= 0)
+  expect_gte(length(fu), 0)
 })
 
 test_that("PanelSurvey get_recipes returns list", {
   ps <- make_test_panel()
 
   recipes <- ps$get_recipes()
-  expect_true(is.list(recipes))
+  expect_type(recipes, "list")
 })
 
 test_that("PanelSurvey get_workflows returns list", {
   ps <- make_test_panel()
 
   workflows <- ps$get_workflows()
-  expect_true(is.list(workflows))
+  expect_type(workflows, "list")
 })
 
 test_that("PanelSurvey get_design returns design object", {
@@ -91,7 +91,7 @@ test_that("PanelSurvey filters by date range", {
   data <- get_data(impl)
 
   # Should have date columns for filtering
-  expect_true(nrow(data) > 0)
+  expect_gt(nrow(data), 0)
 })
 
 test_that("PanelSurvey handles missing follow-up data", {
@@ -99,7 +99,7 @@ test_that("PanelSurvey handles missing follow-up data", {
 
   # Should handle case with no follow-up
   fu <- ps$get_follow_up()
-  expect_true(is.list(fu))
+  expect_type(fu, "list")
 })
 
 test_that("PanelSurvey validates weight patterns", {
@@ -114,5 +114,5 @@ test_that("PanelSurvey processes replicate weights", {
 
   # Should handle replicate weights if present
   impl <- ps$get_implantation()
-  expect_true(!is.null(impl))
+  expect_false(is.null(impl))
 })

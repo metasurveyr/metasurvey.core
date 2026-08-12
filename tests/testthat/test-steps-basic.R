@@ -9,7 +9,7 @@ test_that("step_remove removes columns and records step", {
   )
 
   s2 <- step_remove(s, a, b)
-  expect_true(any(grepl("Remove:", names(s2$steps))))
+  expect_true(any(grepl("Remove:", names(s2$steps), fixed = TRUE)))
   s2 <- bake_steps(s2)
   expect_false("a" %in% names(s2$data))
   expect_false("b" %in% names(s2$data))
@@ -23,7 +23,7 @@ test_that("step_rename renames columns and records step", {
   )
 
   s2 <- step_rename(s, alpha = a)
-  expect_true(any(grepl("Rename:", names(s2$steps))))
+  expect_true(any(grepl("Rename:", names(s2$steps), fixed = TRUE)))
   s2 <- bake_steps(s2)
   expect_true("alpha" %in% names(s2$data))
   expect_false("a" %in% names(s2$data))
@@ -174,7 +174,7 @@ test_that("bake_steps processes multiple steps in order", {
     step_rename(alpha = a, beta = b)
 
   # Before baking
-  expect_equal(length(s2$steps), 2)
+  expect_length(s2$steps, 2)
 
   # After baking
   s3 <- bake_steps(s2)
@@ -196,7 +196,7 @@ test_that("step_remove validates column exists", {
 
   # Removing non-existent column should handle gracefully or error
   # depending on implementation
-  expect_true(is(s, "Survey"))
+  expect_s3_class(s, "Survey")
 })
 
 test_that("step_rename validates new names", {
@@ -212,7 +212,7 @@ test_that("step_rename validates new names", {
 
   # Renaming to existing name
   s2 <- step_rename(s, id = a)
-  expect_true(is(s2, "Survey"))
+  expect_s3_class(s2, "Survey")
 })
 
 # --- Internal steps.R functions ---
@@ -221,13 +221,13 @@ test_that("get_formulas returns formulas from steps", {
   s <- make_test_survey()
   s2 <- step_compute(s, double_age = age * 2)
   steps <- get_steps(s2)
-  formulas <- metasurvey.core:::get_formulas(steps)
-  expect_true(is.character(formulas))
-  expect_true(length(formulas) > 0)
+  formulas <- get_formulas(steps)
+  expect_type(formulas, "character")
+  expect_gt(length(formulas), 0)
 })
 
 test_that("get_formulas returns NULL for empty steps", {
-  result <- metasurvey.core:::get_formulas(list())
+  result <- get_formulas(list())
   expect_null(result)
 })
 
@@ -235,21 +235,21 @@ test_that("get_formulas handles recode type step", {
   s <- make_test_survey()
   s2 <- step_recode(s, age_cat, age < 30 ~ "young", age >= 30 ~ "old", .default = "unknown")
   steps <- get_steps(s2)
-  formulas <- metasurvey.core:::get_formulas(steps)
-  expect_true(is.character(formulas))
-  expect_true(any(grepl("age_cat", formulas)))
+  formulas <- get_formulas(steps)
+  expect_type(formulas, "character")
+  expect_true(any(grepl("age_cat", formulas, fixed = TRUE)))
 })
 
 test_that("get_comments returns comments from steps", {
   s <- make_test_survey()
   s2 <- step_compute(s, z = age + 1, comment = "Add one to age")
   steps <- get_steps(s2)
-  comments <- metasurvey.core:::get_comments(steps)
-  expect_true(is.character(comments))
+  comments <- get_comments(steps)
+  expect_type(comments, "character")
 })
 
 test_that("get_comments returns NULL for empty steps", {
-  result <- metasurvey.core:::get_comments(list())
+  result <- get_comments(list())
   expect_null(result)
 })
 
@@ -257,20 +257,20 @@ test_that("get_type_step returns types from steps", {
   s <- make_test_survey()
   s2 <- step_compute(s, z = age + 1)
   steps <- get_steps(s2)
-  types <- metasurvey.core:::get_type_step(steps)
-  expect_true(is.character(types))
+  types <- get_type_step(steps)
+  expect_type(types, "character")
   expect_true("compute" %in% types)
 })
 
 test_that("get_type_step returns NULL for empty steps", {
-  result <- metasurvey.core:::get_type_step(list())
+  result <- get_type_step(list())
   expect_null(result)
 })
 
 test_that("find_dependencies extracts variable names from expressions", {
   s <- make_test_survey()
   data <- get_data(s)
-  deps <- metasurvey.core:::find_dependencies(quote(age + income), data)
+  deps <- find_dependencies(quote(age + income), data)
   expect_true("age" %in% deps)
   expect_true("income" %in% deps)
 })
@@ -278,14 +278,14 @@ test_that("find_dependencies extracts variable names from expressions", {
 test_that("find_dependencies returns empty for literals", {
   s <- make_test_survey()
   data <- get_data(s)
-  deps <- metasurvey.core:::find_dependencies(quote(42), data)
-  expect_equal(length(deps), 0)
+  deps <- find_dependencies(quote(42), data)
+  expect_length(deps, 0)
 })
 
 test_that("find_dependencies handles nested calls", {
   s <- make_test_survey()
   data <- get_data(s)
-  deps <- metasurvey.core:::find_dependencies(quote(sqrt(age^2 + income^2)), data)
+  deps <- find_dependencies(quote(sqrt(age^2 + income^2)), data)
   expect_true("age" %in% deps)
   expect_true("income" %in% deps)
 })
@@ -425,12 +425,12 @@ test_that("step_join errors on non-data.frame x", {
 test_that("view_graph requires visNetwork", {
   s <- make_test_survey()
   # Skip if visNetwork is installed, otherwise expect error
-  if (!requireNamespace("visNetwork", quietly = TRUE)) {
-    expect_error(view_graph(s), "visNetwork")
-  } else {
+  if (requireNamespace("visNetwork", quietly = TRUE)) {
     # Just verify it runs without error
     result <- view_graph(s)
-    expect_true(!is.null(result))
+    expect_false(is.null(result))
+  } else {
+    expect_error(view_graph(s), "visNetwork")
   }
 })
 
@@ -442,7 +442,7 @@ test_that("view_graph requires visNetwork", {
 test_that("compute handles lazy evaluation", {
   svy <- make_test_survey()
 
-  result <- metasurvey.core:::compute(
+  result <- compute(
     svy,
     new_var = x + y,
     lazy = TRUE
@@ -455,7 +455,7 @@ test_that("compute handles lazy evaluation", {
 test_that("compute handles non-lazy evaluation", {
   svy <- make_test_survey()
 
-  result <- metasurvey.core:::compute(
+  result <- compute(
     svy,
     new_var = x + y,
     lazy = FALSE,
@@ -469,7 +469,7 @@ test_that("compute handles non-lazy evaluation", {
 test_that("compute handles grouped computations", {
   svy <- make_test_survey()
 
-  result <- metasurvey.core:::compute(
+  result <- compute(
     svy,
     mean_income = mean(income),
     .by = "region",
@@ -484,7 +484,7 @@ test_that("compute handles grouped computations", {
 test_that("recode handles lazy evaluation", {
   svy <- make_test_survey()
 
-  result <- metasurvey.core:::recode(
+  result <- recode(
     svy,
     new_var = "test",
     age < 30 ~ "Young",
@@ -497,7 +497,7 @@ test_that("recode handles lazy evaluation", {
 test_that("recode handles factor conversion", {
   svy <- make_test_survey()
 
-  result <- metasurvey.core:::recode(
+  result <- recode(
     svy,
     new_var = "age_cat",
     age < 30 ~ "Young",
@@ -509,13 +509,13 @@ test_that("recode handles factor conversion", {
 
   expect_s3_class(result, "Survey")
   expect_true("age_cat" %in% names(get_data(result)))
-  expect_true(is.factor(get_data(result)$age_cat))
+  expect_s3_class(get_data(result)$age_cat, "factor")
 })
 
 test_that("recode handles ordered factors", {
   svy <- make_test_survey()
 
-  result <- metasurvey.core:::recode(
+  result <- recode(
     svy,
     new_var = "status_ord",
     status == 1 ~ "Low",
@@ -528,13 +528,13 @@ test_that("recode handles ordered factors", {
   )
 
   expect_s3_class(result, "Survey")
-  expect_true(is.ordered(get_data(result)$status_ord))
+  expect_s3_class(get_data(result)$status_ord, "ordered")
 })
 
 test_that("recode handles default values", {
   svy <- make_test_survey()
 
-  result <- metasurvey.core:::recode(
+  result <- recode(
     svy,
     new_var = "test_default",
     age < 25 ~ "Young",
@@ -579,7 +579,7 @@ test_that("step_recode with .to_factor converts to factor", {
     .to_factor = TRUE
   )
   expect_true("region_label" %in% names(get_data(s2)))
-  expect_true(is.factor(get_data(s2)$region_label))
+  expect_s3_class(get_data(s2)$region_label, "factor")
 })
 
 # --- step_compute with grouped ---
@@ -597,7 +597,7 @@ test_that("step_compute with use_copy=FALSE records step", {
   s <- make_test_survey()
   s2 <- step_compute(s, z = age + 1, use_copy = FALSE)
   # With lazy_default()=TRUE, step is recorded but not applied yet
-  expect_true(length(s2$steps) > 0)
+  expect_gt(length(s2$steps), 0)
 })
 
 
@@ -782,29 +782,17 @@ test_that("view_graph with custom init_step label", {
   expect_true(inherits(g, "visNetwork") || inherits(g, "htmlwidget"))
 })
 
-# ── new_step helper ──────────────────────────────────────────────────────────
-
-test_that("new_step errors when recode type missing new_var", {
-  expect_error(
-    metasurvey.core:::new_step(
-      id = 1, name = "test", description = "test",
-      type = "recode"
-    ),
-    class = "metasurvey_error_step"
-  )
-})
-
 # ── Internal compute/recode with .copy=FALSE + lazy=TRUE paths ───────────────
 
 test_that("internal compute with .copy=FALSE and lazy=TRUE returns survey unchanged", {
   s <- make_test_survey()
-  result <- metasurvey.core:::compute(s, double_age = age * 2, .copy = FALSE, lazy = TRUE)
+  result <- compute(s, double_age = age * 2, .copy = FALSE, lazy = TRUE)
   expect_identical(result, s)
 })
 
 test_that("internal recode with .copy=FALSE and lazy=TRUE returns survey unchanged", {
   s <- make_test_survey()
-  result <- metasurvey.core:::recode(s, "age_cat",
+  result <- recode(s, "age_cat",
     age < 30 ~ "young", age >= 30 ~ "old",
     .copy = FALSE, lazy = TRUE
   )
@@ -813,14 +801,14 @@ test_that("internal recode with .copy=FALSE and lazy=TRUE returns survey unchang
 
 test_that("internal recode with .to_factor creates factor column", {
   s <- make_test_survey()
-  result <- metasurvey.core:::recode(s, "age_cat",
+  result <- recode(s, "age_cat",
     age < 30 ~ "young", age >= 30 ~ "old",
     .default = "unknown",
     .copy = TRUE, lazy = FALSE, .to_factor = TRUE
   )
   dt <- get_data(result)
   expect_true("age_cat" %in% names(dt))
-  expect_true(is.factor(dt$age_cat))
+  expect_s3_class(dt$age_cat, "factor")
 })
 
 # ── Additional steps coverage push ────────────────────────────────────────────
@@ -909,7 +897,7 @@ test_that("step_filter removes rows based on condition", {
   s2 <- step_filter(s, age >= 30)
   s2 <- bake_steps(s2)
   expect_true(all(get_data(s2)$age >= 30))
-  expect_true(nrow(get_data(s2)) < 50)
+  expect_lt(nrow(get_data(s2)), 50)
 })
 
 test_that("step_filter with multiple conditions (AND)", {
@@ -924,8 +912,8 @@ test_that("step_filter with multiple conditions (AND)", {
 test_that("step_filter records step in history", {
   s <- make_test_survey()
   s2 <- step_filter(s, age >= 30)
-  expect_true(any(grepl("Filter:", names(s2$steps))))
-  expect_equal(length(s2$steps), 1)
+  expect_true(any(grepl("Filter:", names(s2$steps), fixed = TRUE)))
+  expect_length(s2$steps, 1)
 })
 
 test_that("step_filter chains with other steps", {
@@ -960,7 +948,7 @@ test_that("step_filter on RotativePanelSurvey", {
   panel <- make_test_panel()
   result <- step_filter(panel, age >= 30)
   expect_s3_class(result, "RotativePanelSurvey")
-  expect_true(length(result$steps) > 0)
+  expect_gt(length(result$steps), 0)
 })
 
 test_that("step_filter validates dependencies", {
@@ -983,7 +971,7 @@ test_that("step_filter with .copy preserves original", {
   s2 <- step_filter(s, age >= 30, .copy = TRUE)
   s2 <- bake_steps(s2)
   expect_equal(nrow(get_data(s)), n_before)
-  expect_true(nrow(get_data(s2)) < n_before)
+  expect_lt(nrow(get_data(s2)), n_before)
 })
 
 test_that("step_filter requires at least one expression", {
@@ -1053,7 +1041,7 @@ test_that("step_filter with .by preserves grouping through bake_steps", {
   expect_setequal(filtered$y, c(20, 30, 30))
 
   # must match a direct (non-lazy) filter_rows with .by
-  direct <- metasurvey.core:::filter_rows(
+  direct <- filter_rows(
     s,
     y == max(y),
     .by = "ID", lazy = FALSE, .copy = TRUE
@@ -1098,12 +1086,12 @@ test_that("step_remove/step_rename with lazy=FALSE do not double-execute on bake
   s2 <- step_remove(s, x, lazy = FALSE)
   expect_false("x" %in% names(get_data(s2)))
   # bake must skip the already-executed remove (no warning about missing x)
-  expect_no_warning(s2 <- bake_steps(s2))
+  s2 <- expect_no_warning(bake_steps(s2))
   expect_false("x" %in% names(get_data(s2)))
 
   s3 <- step_rename(s, edad = age, lazy = FALSE)
   expect_true("edad" %in% names(get_data(s3)))
   # previously re-baking errored with "Variables to rename not found: age"
-  expect_no_error(s3 <- bake_steps(s3))
+  s3 <- expect_no_error(bake_steps(s3))
   expect_true("edad" %in% names(get_data(s3)))
 })

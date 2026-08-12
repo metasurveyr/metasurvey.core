@@ -3,15 +3,15 @@
 
 test_that("WorkflowRegistry register and list", {
   reg <- WorkflowRegistry$new()
-  expect_equal(length(reg$list_all()), 0)
+  expect_length(reg$list_all(), 0)
 
   wf <- RecipeWorkflow$new(id = "wf1", name = "WF 1", survey_type = "ech")
   reg$register(wf)
-  expect_equal(length(reg$list_all()), 1)
+  expect_length(reg$list_all(), 1)
 
   wf2 <- RecipeWorkflow$new(id = "wf2", name = "WF 2", survey_type = "eaii")
   reg$register(wf2)
-  expect_equal(length(reg$list_all()), 2)
+  expect_length(reg$list_all(), 2)
 })
 
 test_that("WorkflowRegistry rejects non-RecipeWorkflow", {
@@ -23,9 +23,9 @@ test_that("WorkflowRegistry unregister", {
   reg <- WorkflowRegistry$new()
   wf <- RecipeWorkflow$new(id = "wf1", name = "WF 1")
   reg$register(wf)
-  expect_equal(length(reg$list_all()), 1)
+  expect_length(reg$list_all(), 1)
   reg$unregister("wf1")
-  expect_equal(length(reg$list_all()), 0)
+  expect_length(reg$list_all(), 0)
 })
 
 test_that("WorkflowRegistry search", {
@@ -35,13 +35,13 @@ test_that("WorkflowRegistry search", {
   reg$register(RecipeWorkflow$new(id = "3", name = "Labor Force Participation"))
 
   results <- reg$search("labor")
-  expect_equal(length(results), 2)
+  expect_length(results, 2)
 
   results <- reg$search("income")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
 
   results <- reg$search("nonexistent")
-  expect_equal(length(results), 0)
+  expect_length(results, 0)
 })
 
 test_that("WorkflowRegistry filter by survey type", {
@@ -51,26 +51,26 @@ test_that("WorkflowRegistry filter by survey type", {
   reg$register(RecipeWorkflow$new(id = "3", name = "WF3", survey_type = "ech"))
 
   results <- reg$filter(survey_type = "ech")
-  expect_equal(length(results), 2)
+  expect_length(results, 2)
 
   results <- reg$filter(survey_type = "eaii")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
 })
 
 test_that("WorkflowRegistry filter by recipe_id (find_by_recipe)", {
   reg <- WorkflowRegistry$new()
   reg$register(RecipeWorkflow$new(id = "1", name = "WF1", recipe_ids = c("r1", "r2")))
   reg$register(RecipeWorkflow$new(id = "2", name = "WF2", recipe_ids = c("r2", "r3")))
-  reg$register(RecipeWorkflow$new(id = "3", name = "WF3", recipe_ids = c("r4")))
+  reg$register(RecipeWorkflow$new(id = "3", name = "WF3", recipe_ids = "r4"))
 
   results <- reg$find_by_recipe("r2")
-  expect_equal(length(results), 2)
+  expect_length(results, 2)
 
   results <- reg$find_by_recipe("r4")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
 
   results <- reg$find_by_recipe("r999")
-  expect_equal(length(results), 0)
+  expect_length(results, 0)
 })
 
 test_that("WorkflowRegistry rank_by_downloads", {
@@ -80,12 +80,12 @@ test_that("WorkflowRegistry rank_by_downloads", {
   reg$register(RecipeWorkflow$new(id = "3", name = "Mid", downloads = 50L))
 
   ranked <- reg$rank_by_downloads()
-  expect_equal(length(ranked), 3)
+  expect_length(ranked, 3)
   expect_equal(ranked[[1]]$name, "High")
   expect_equal(ranked[[3]]$name, "Low")
 
   top2 <- reg$rank_by_downloads(n = 2)
-  expect_equal(length(top2), 2)
+  expect_length(top2, 2)
 })
 
 test_that("WorkflowRegistry get by id", {
@@ -103,7 +103,7 @@ test_that("WorkflowRegistry save and load round-trip", {
   reg <- WorkflowRegistry$new()
   reg$register(RecipeWorkflow$new(
     id = "wf_sl", name = "Save Load WF", user = "Author",
-    recipe_ids = c("r1"), estimation_type = "annual",
+    recipe_ids = "r1", estimation_type = "annual",
     downloads = 7L
   ))
 
@@ -113,7 +113,7 @@ test_that("WorkflowRegistry save and load round-trip", {
 
   reg2 <- WorkflowRegistry$new()
   reg2$load(tmp)
-  expect_equal(length(reg2$list_all()), 1)
+  expect_length(reg2$list_all(), 1)
   loaded <- reg2$get("wf_sl")
   expect_equal(loaded$name, "Save Load WF")
   expect_equal(loaded$recipe_ids, "r1")
@@ -139,8 +139,8 @@ test_that("WorkflowRegistry print produces output", {
   reg <- WorkflowRegistry$new()
   reg$register(RecipeWorkflow$new(id = "1", name = "A"))
   output <- capture.output(print(reg))
-  expect_true(any(grepl("WorkflowRegistry", output)))
-  expect_true(any(grepl("1 workflows", output)))
+  expect_true(any(grepl("WorkflowRegistry", output, fixed = TRUE)))
+  expect_true(any(grepl("1 workflows", output, fixed = TRUE)))
 })
 
 # --- WorkflowBackend tests ---
@@ -151,18 +151,18 @@ test_that("WorkflowBackend local publish and search", {
   backend$publish(wf)
 
   results <- backend$search("backend")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
 
   expect_equal(backend$get("b1")$name, "Backend WF")
 })
 
 test_that("WorkflowBackend local find_by_recipe", {
   backend <- WorkflowBackend$new("local")
-  backend$publish(RecipeWorkflow$new(id = "1", name = "A", recipe_ids = c("r1")))
-  backend$publish(RecipeWorkflow$new(id = "2", name = "B", recipe_ids = c("r2")))
+  backend$publish(RecipeWorkflow$new(id = "1", name = "A", recipe_ids = "r1"))
+  backend$publish(RecipeWorkflow$new(id = "2", name = "B", recipe_ids = "r2"))
 
   results <- backend$find_by_recipe("r1")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
   expect_equal(results[[1]]$name, "A")
 })
 
@@ -183,7 +183,7 @@ test_that("search_workflows uses active backend", {
   # Need to re-set because publish was on a different ref
   options(metasurvey.workflow_backend = backend)
   results <- search_workflows("tidy")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
 })
 
 test_that("list_workflows returns all", {
@@ -197,7 +197,7 @@ test_that("list_workflows returns all", {
   options(metasurvey.workflow_backend = backend)
 
   all <- list_workflows()
-  expect_equal(length(all), 2)
+  expect_length(all, 2)
 })
 
 test_that("find_workflows_for_recipe cross-ref", {
@@ -207,11 +207,11 @@ test_that("find_workflows_for_recipe cross-ref", {
   set_workflow_backend("local")
   backend <- get_workflow_backend()
   backend$publish(RecipeWorkflow$new(id = "1", name = "A", recipe_ids = c("r1", "r2")))
-  backend$publish(RecipeWorkflow$new(id = "2", name = "B", recipe_ids = c("r3")))
+  backend$publish(RecipeWorkflow$new(id = "2", name = "B", recipe_ids = "r3"))
   options(metasurvey.workflow_backend = backend)
 
   results <- find_workflows_for_recipe("r1")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
   expect_equal(results[[1]]$name, "A")
 })
 
@@ -224,5 +224,5 @@ test_that("publish_workflow via tidy API", {
   publish_workflow(wf)
 
   results <- search_workflows("Published")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
 })

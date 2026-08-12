@@ -19,7 +19,7 @@ test_that("Recipe$doc() generates documentation from steps", {
 
   # Apply steps to the survey
   svy <- step_compute(svy,
-    high_income = ifelse(income > 2500, 1L, 0L),
+    high_income = as.integer(income > 2500),
     income_log = log(income),
     comment = "Income indicators"
   )
@@ -77,7 +77,7 @@ test_that("Recipe$doc() handles recode steps", {
   )
 
   svy <- step_compute(svy,
-    active = ifelse(status %in% c(1, 2), 1L, 0L),
+    active = as.integer(status %in% c(1, 2)),
     comment = "Active population"
   )
   svy <- bake_steps(svy)
@@ -230,7 +230,7 @@ test_that("read_recipe() handles old format (backward compatibility)", {
     svy_type = "test",
     edition = "2022",
     description = "Old format",
-    steps = c("step_compute(svy, new_var = old_var * 2)")
+    steps = "step_compute(svy, new_var = old_var * 2)"
   )
 
   tmp_file <- tempfile(fileext = ".json")
@@ -270,12 +270,12 @@ test_that("print.Recipe displays formatted output", {
 
   output <- capture.output(print(rec))
 
-  expect_true(any(grepl("Print Test Recipe", output)))
-  expect_true(any(grepl("Test User", output)))
-  expect_true(any(grepl("printing", output)))
-  expect_true(any(grepl("Requires", output)))
-  expect_true(any(grepl("Pipeline", output)))
-  expect_true(any(grepl("Produces", output)))
+  expect_true(any(grepl("Print Test Recipe", output, fixed = TRUE)))
+  expect_true(any(grepl("Test User", output, fixed = TRUE)))
+  expect_true(any(grepl("printing", output, fixed = TRUE)))
+  expect_true(any(grepl("Requires", output, fixed = TRUE)))
+  expect_true(any(grepl("Pipeline", output, fixed = TRUE)))
+  expect_true(any(grepl("Produces", output, fixed = TRUE)))
 })
 
 test_that("Recipe round-trip preserves all information", {
@@ -292,7 +292,7 @@ test_that("Recipe round-trip preserves all information", {
   )
 
   svy <- step_compute(svy,
-    employed = ifelse(status == 1, 1L, 0L),
+    employed = as.integer(status == 1),
     comment = "Employment status"
   )
   svy <- step_compute(svy,
@@ -330,7 +330,7 @@ test_that("Recipe round-trip preserves all information", {
 
   expect_equal(sort(doc_loaded$input_variables), sort(doc_original$input_variables))
   expect_equal(sort(doc_loaded$output_variables), sort(doc_original$output_variables))
-  expect_equal(length(doc_loaded$pipeline), length(doc_original$pipeline))
+  expect_length(doc_loaded$pipeline, length(doc_original$pipeline))
 
   unlink(tmp_file)
 })

@@ -4,14 +4,14 @@
 test_that("Create empty registry", {
   reg <- RecipeRegistry$new()
   expect_s3_class(reg, "RecipeRegistry")
-  expect_equal(length(reg$list_all()), 0)
+  expect_length(reg$list_all(), 0)
 })
 
 test_that("register adds recipe to catalog", {
   reg <- RecipeRegistry$new()
   r <- make_eco_recipe("test1", "user1")
   reg$register(r)
-  expect_equal(length(reg$list_all()), 1)
+  expect_length(reg$list_all(), 1)
 })
 
 test_that("register assigns id if missing", {
@@ -19,7 +19,7 @@ test_that("register assigns id if missing", {
   r <- make_eco_recipe("test1", "user1")
   reg$register(r)
   recipes <- reg$list_all()
-  expect_true(!is.null(recipes[[1]]$id))
+  expect_false(is.null(recipes[[1]]$id))
 })
 
 test_that("register rejects non-Recipe objects", {
@@ -34,7 +34,7 @@ test_that("unregister removes recipe by id", {
   reg$register(r)
   id <- r$id
   reg$unregister(id)
-  expect_equal(length(reg$list_all()), 0)
+  expect_length(reg$list_all(), 0)
 })
 
 test_that("search by name/description", {
@@ -47,15 +47,15 @@ test_that("search by name/description", {
   reg$register(r3)
 
   results <- reg$search("labor")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
   expect_equal(results[[1]]$name, "Labor Market Analysis")
 
   results2 <- reg$search("income")
-  expect_equal(length(results2), 1)
+  expect_length(results2, 1)
 
   # Search in description
   results3 <- reg$search("Test recipe")
-  expect_equal(length(results3), 3)
+  expect_length(results3, 3)
 })
 
 test_that("filter by svy_type", {
@@ -68,7 +68,7 @@ test_that("filter by svy_type", {
   reg$register(r3)
 
   results <- reg$filter(survey_type = "ech")
-  expect_equal(length(results), 2)
+  expect_length(results, 2)
 })
 
 test_that("filter by edition", {
@@ -79,7 +79,7 @@ test_that("filter by edition", {
   reg$register(r2)
 
   results <- reg$filter(edition = "2023")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
   expect_equal(results[[1]]$name, "A")
 })
 
@@ -95,10 +95,10 @@ test_that("filter by category", {
   reg$register(r3)
 
   results <- reg$filter(category = "labor_market")
-  expect_equal(length(results), 2)
+  expect_length(results, 2)
 
   results2 <- reg$filter(category = "income")
-  expect_equal(length(results2), 2)
+  expect_length(results2, 2)
 })
 
 test_that("filter by certification_level", {
@@ -110,7 +110,7 @@ test_that("filter by certification_level", {
   reg$register(r2)
 
   results <- reg$filter(certification_level = "official")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
   expect_equal(results[[1]]$name, "B")
 })
 
@@ -125,7 +125,7 @@ test_that("filter with multiple criteria", {
   reg$register(r3)
 
   results <- reg$filter(survey_type = "ech", edition = "2023")
-  expect_equal(length(results), 1)
+  expect_length(results, 1)
   expect_equal(results[[1]]$name, "A")
 })
 
@@ -139,7 +139,7 @@ test_that("rank_by_downloads returns top-N sorted", {
   reg$register(r3)
 
   ranked <- reg$rank_by_downloads(2)
-  expect_equal(length(ranked), 2)
+  expect_length(ranked, 2)
   expect_equal(ranked[[1]]$name, "High")
   expect_equal(ranked[[2]]$name, "Mid")
 })
@@ -152,7 +152,7 @@ test_that("rank_by_downloads returns all if n is NULL", {
   reg$register(r2)
 
   ranked <- reg$rank_by_downloads()
-  expect_equal(length(ranked), 2)
+  expect_length(ranked, 2)
   expect_equal(ranked[[1]]$name, "High")
 })
 
@@ -201,7 +201,7 @@ test_that("list_all returns all recipes", {
   r2 <- make_eco_recipe("B", "u")
   reg$register(r1)
   reg$register(r2)
-  expect_equal(length(reg$list_all()), 2)
+  expect_length(reg$list_all(), 2)
 })
 
 test_that("save and load round-trip", {
@@ -221,7 +221,7 @@ test_that("save and load round-trip", {
 
   reg2 <- RecipeRegistry$new()
   reg2$load(tmp)
-  expect_equal(length(reg2$list_all()), 1)
+  expect_length(reg2$list_all(), 1)
   loaded <- reg2$list_all()[[1]]
   expect_equal(loaded$name, "Saved")
   expect_equal(loaded$downloads, 42L)
@@ -237,7 +237,7 @@ test_that("list_by_user filters by author name", {
   reg$register(r3)
 
   results <- reg$list_by_user("Juan")
-  expect_equal(length(results), 2)
+  expect_length(results, 2)
 })
 
 test_that("list_by_institution filters by institution", {
@@ -254,7 +254,7 @@ test_that("list_by_institution filters by institution", {
   reg$register(r3)
 
   results <- reg$list_by_institution("IECON")
-  expect_equal(length(results), 2)
+  expect_length(results, 2)
 })
 
 test_that("stats returns summary", {

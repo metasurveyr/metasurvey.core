@@ -57,7 +57,7 @@ test_that("get_path returns full category path", {
 test_that("default_categories returns built-in taxonomy", {
   cats <- default_categories()
   expect_type(cats, "list")
-  expect_true(length(cats) >= 6)
+  expect_gte(length(cats), 6)
   names_list <- vapply(cats, function(c) c$name, character(1))
   expect_true("labor_market" %in% names_list)
   expect_true("income" %in% names_list)

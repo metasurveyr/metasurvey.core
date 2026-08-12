@@ -223,7 +223,7 @@ Recipe <- R6Class("Recipe",
           if (is.character(s)) {
             paste(s, collapse = " ")
           } else {
-            paste(deparse(s), collapse = " ")
+            deparse1(s)
           }
         })),
         labels = self$labels,
@@ -247,7 +247,7 @@ Recipe <- R6Class("Recipe",
         doi = self$doi,
         id = self$id,
         categories = if (length(cat_names) > 0) {
-          paste(cat_names, collapse = ", ")
+          toString(cat_names)
         } else {
           NULL
         },
@@ -355,7 +355,7 @@ Recipe <- R6Class("Recipe",
           sprintf(
             "Recipe '%s' requires variables not present in survey: %s",
             self$name,
-            paste(missing_vars, collapse = ", ")
+            toString(missing_vars)
           ),
           class = "metasurvey_error_recipe"
         )
@@ -469,11 +469,11 @@ recipe <- function(...) {
 
   check_args <- sum(metadata_recipes_names %in% names(dots))
 
-  if (!(check_args == length(metadata_recipes_names))) {
+  if (check_args != length(metadata_recipes_names)) {
     msvy_abort(
       paste0(
         "The recipe must have the following metadata: ",
-        paste(metadata_recipe(), collapse = ", ")
+        toString(metadata_recipe())
       ),
       class = "metasurvey_error_recipe"
     )
@@ -615,26 +615,6 @@ save_recipe <- function(recipe, file) {
   metasurvey_msg(
     glue::glue("The recipe has been saved in {file}")
   )
-}
-
-#' recipe to json
-#' @param recipe A Recipe object
-#' @return A JSON object
-#' @keywords internal
-
-recipe_to_json <- function(recipe) {
-  recipe <- list(
-    name = recipe$name,
-    user = recipe$user,
-    survey_type = recipe$survey_type,
-    edition = recipe$edition,
-    description = recipe$description,
-    steps = recipe$steps
-  )
-
-  recipe |>
-    encoding_recipe() |>
-    jsonlite::toJSON(simplifyVector = TRUE, raw = "mongo")
 }
 
 #' @title Read Recipe
@@ -954,7 +934,7 @@ steps_to_recipe <- function(
       steps_call = eval(lapply(
         steps,
         function(step) {
-          paste(deparse(step$call, width.cutoff = 500L), collapse = " ")
+          deparse1(step$call, width.cutoff = 500L)
         }
       )),
       doi = doi,
@@ -1035,7 +1015,7 @@ print.Recipe <- function(x, ...) {
 
   # Metadata
   cat(cli::col_silver("Author:  "), x$user, "\n", sep = "")
-  ed_str <- paste(as.character(unlist(x$edition)), collapse = ", ")
+  ed_str <- toString(as.character(unlist(x$edition)))
   cat(cli::col_silver("Survey:  "),
     x$survey_type, " / ", ed_str, "\n",
     sep = ""
@@ -1066,7 +1046,7 @@ print.Recipe <- function(x, ...) {
   if (length(x$categories) > 0) {
     cat_names <- vapply(x$categories, function(c) c$name, character(1))
     cat(cli::col_silver("Categories: "),
-      paste(cat_names, collapse = ", "), "\n",
+      toString(cat_names), "\n",
       sep = ""
     )
   }
@@ -1078,7 +1058,7 @@ print.Recipe <- function(x, ...) {
       length(doc_info$input_variables),
       " variables) \u2500\u2500\n"
     ))))
-    cat("  ", paste(doc_info$input_variables, collapse = ", "), "\n", sep = "")
+    cat("  ", toString(doc_info$input_variables), "\n", sep = "")
   }
 
   # Pipeline
@@ -1090,7 +1070,7 @@ print.Recipe <- function(x, ...) {
     ))))
     for (step_info in doc_info$pipeline) {
       outputs_str <- if (length(step_info$outputs) > 0) {
-        paste(step_info$outputs, collapse = ", ")
+        toString(step_info$outputs)
       } else {
         "(no output)"
       }
@@ -1138,14 +1118,11 @@ print.Recipe <- function(x, ...) {
         vars <- vars_by_type[[type]]
         paste0(vars, " [", type, "]")
       })
-      cat("  ", paste(unlist(output_parts), collapse = ", "), "\n", sep = "")
+      cat("  ", toString(unlist(output_parts)), "\n", sep = "")
     } else {
       cat(
         "  ",
-        paste(
-          doc_info$output_variables,
-          collapse = ", "
-        ),
+        toString(doc_info$output_variables),
         "\n",
         sep = ""
       )

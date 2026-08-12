@@ -41,8 +41,8 @@ test_that("RecipeWorkflow creation with all fields", {
   expect_equal(wf$survey_type, "ech")
   expect_equal(wf$estimation_type, c("annual", "quarterly"))
   expect_equal(wf$recipe_ids, c("recipe_001", "recipe_002"))
-  expect_equal(length(wf$calls), 1)
-  expect_equal(length(wf$call_metadata), 1)
+  expect_length(wf$calls, 1)
+  expect_length(wf$call_metadata, 1)
   expect_equal(wf$downloads, 42L)
   expect_equal(wf$doi, "10.1234/test")
 })
@@ -66,7 +66,7 @@ test_that("RecipeWorkflow$doc() returns correct structure", {
   expect_equal(doc$meta$name, "Test WF")
   expect_equal(doc$meta$user, "Tester")
   expect_equal(doc$recipe_ids, c("r1", "r2"))
-  expect_equal(length(doc$estimations), 1)
+  expect_length(doc$estimations, 1)
   expect_equal(doc$estimation_types, "annual")
 })
 
@@ -78,8 +78,8 @@ test_that("RecipeWorkflow$to_list() and workflow_from_list() round-trip", {
     user = "Author",
     survey_type = "ech",
     edition = "2023",
-    estimation_type = c("annual"),
-    recipe_ids = c("recipe_001"),
+    estimation_type = "annual",
+    recipe_ids = "recipe_001",
     calls = list("svymean(~x, design)"),
     call_metadata = list(
       list(type = "svymean", formula = "~x", description = "Mean x")
@@ -135,7 +135,7 @@ test_that("save_workflow() and read_workflow() round-trip", {
   expect_equal(wf2$recipe_ids, c("r1", "r2"))
   expect_equal(wf2$doi, "10.1234/save")
   expect_equal(wf2$estimation_type, "annual")
-  expect_equal(length(wf2$call_metadata), 1)
+  expect_length(wf2$call_metadata, 1)
 
   unlink(tmp_file)
 })
@@ -187,18 +187,18 @@ test_that("print.RecipeWorkflow produces output", {
     survey_type = "ech",
     edition = "2023",
     estimation_type = "annual",
-    recipe_ids = c("r1"),
+    recipe_ids = "r1",
     call_metadata = list(
       list(type = "svymean", formula = "~x", description = "Mean x")
     )
   )
 
   output <- capture.output(print(wf))
-  expect_true(any(grepl("Print WF", output)))
-  expect_true(any(grepl("Printer", output)))
-  expect_true(any(grepl("Recipes", output)))
-  expect_true(any(grepl("Estimations", output)))
-  expect_true(any(grepl("svymean", output)))
+  expect_true(any(grepl("Print WF", output, fixed = TRUE)))
+  expect_true(any(grepl("Printer", output, fixed = TRUE)))
+  expect_true(any(grepl("Recipes", output, fixed = TRUE)))
+  expect_true(any(grepl("Estimations", output, fixed = TRUE)))
+  expect_true(any(grepl("svymean", output, fixed = TRUE)))
 })
 
 test_that("save_workflow rejects non-RecipeWorkflow objects", {
@@ -228,7 +228,7 @@ test_that("print.RecipeWorkflow shows DOI when present", {
   output <- capture.output(print(wf))
   output_text <- paste(output, collapse = "\n")
   expect_true(grepl("10.1234", output_text))
-  expect_true(grepl("A workflow with DOI", output_text))
+  expect_true(grepl("A workflow with DOI", output_text, fixed = TRUE))
 })
 
 test_that("print.RecipeWorkflow shows downloads when > 0", {
@@ -242,7 +242,7 @@ test_that("print.RecipeWorkflow shows downloads when > 0", {
 
   output <- capture.output(print(wf))
   output_text <- paste(output, collapse = "\n")
-  expect_true(grepl("42", output_text))
+  expect_true(grepl("42", output_text, fixed = TRUE))
 })
 
 test_that("print.RecipeWorkflow shows raw calls when no call_metadata", {
@@ -256,8 +256,8 @@ test_that("print.RecipeWorkflow shows raw calls when no call_metadata", {
 
   output <- capture.output(print(wf))
   output_text <- paste(output, collapse = "\n")
-  expect_true(grepl("Calls", output_text))
-  expect_true(grepl("svymean", output_text))
+  expect_true(grepl("Calls", output_text, fixed = TRUE))
+  expect_true(grepl("svymean", output_text, fixed = TRUE))
 })
 
 test_that("print.RecipeWorkflow shows replicate weight_spec", {
@@ -279,8 +279,8 @@ test_that("print.RecipeWorkflow shows replicate weight_spec", {
 
   output <- capture.output(print(wf))
   output_text <- paste(output, collapse = "\n")
-  expect_true(grepl("anda", output_text))
-  expect_true(grepl("bootstrap", output_text))
+  expect_true(grepl("anda", output_text, fixed = TRUE))
+  expect_true(grepl("bootstrap", output_text, fixed = TRUE))
 })
 
 # --- workflow_from_list with categories ---

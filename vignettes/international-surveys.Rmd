@@ -145,7 +145,7 @@ svy_eph <- svy_eph |>
     comment = "Sex from CH04"
   ) |>
   step_compute(
-    employed = ifelse(ESTADO == 1, 1L, 0L),
+    employed = as.integer(ESTADO == 1),
     comment = "Employment indicator"
   ) |>
   bake_steps()
@@ -452,7 +452,7 @@ svy_demo <- Survey$new(
 )
 
 svy_demo <- svy_demo |>
-  step_compute(indicator = ifelse(age > 30, 1L, 0L)) |>
+  step_compute(indicator = as.integer(age > 30)) |>
   step_recode(age_group,
     age < 30 ~ "Young",
     age >= 30 ~ "Adult",
@@ -469,8 +469,8 @@ my_recipe <- steps_to_recipe(
 )
 
 doc <- my_recipe$doc()
-cat("Inputs:", paste(doc$input_variables, collapse = ", "), "\n")
-cat("Outputs:", paste(doc$output_variables, collapse = ", "), "\n")
+cat("Inputs:", toString(doc$input_variables), "\n")
+cat("Outputs:", toString(doc$output_variables), "\n")
 ```
 
 Recipes capture *what* transformations to apply, not *which* survey they

@@ -170,7 +170,9 @@ workflow <- function(svy, ..., estimation_type = "monthly",
   if (is(svy, "Survey")) {
     svy <- list(svy)
   }
-  if (!is.list(svy) || length(svy) == 0 || !all(vapply(svy, function(x) is(x, "Survey"), logical(1)))) {
+  valid_svys <- is.list(svy) && length(svy) > 0 &&
+    all(vapply(svy, is, logical(1), "Survey"))
+  if (!valid_svys) {
     stop_input(
       "workflow", "svy",
       "must be a Survey, a list of Survey objects, or a PoolSurvey",
@@ -382,9 +384,9 @@ workflow_panel <- function(survey, ...,
 
 workflow_pool <- function(survey, ..., estimation_type = "monthly",
                           level = 0.95) {
-  if (grepl(":", estimation_type)) {
-    estimation_type_first <- strsplit(estimation_type, ":")[[1]][1]
-    estimation_type <- strsplit(estimation_type, ":")[[1]][2]
+  if (grepl(":", estimation_type, fixed = TRUE)) {
+    estimation_type_first <- strsplit(estimation_type, ":", fixed = TRUE)[[1]][1]
+    estimation_type <- strsplit(estimation_type, ":", fixed = TRUE)[[1]][2]
   } else {
     estimation_type <- estimation_type
     estimation_type_first <- estimation_type
@@ -536,34 +538,19 @@ workflow_pool <- function(survey, ..., estimation_type = "monthly",
   }
   paste0(
     name_function,
-    " [", paste(deparse(domain_expr), collapse = " "), "]"
+    " [", deparse1(domain_expr), "]"
   )
 }
 
 cat_estimation <- function(estimation, call, level = 0.95) {
-  class_estimation <- class(estimation)[1]
-
-  if (!class_estimation %in% c("svyby", "svyratio", "cvystat")) {
-    class_estimation <- "default"
-  }
-
-  do.call(
-    paste0(
-      "cat_estimation.",
-      class_estimation
-    ),
-    list(
-      estimation,
-      call,
-      level = level
-    )
-  )
+  UseMethod("cat_estimation")
 }
 
 #' cat_estimation_svyby
 #' @param estimation Estimation
 #' @param call Call
 #' @importFrom data.table data.table melt
+#' @exportS3Method cat_estimation svyby
 #' @keywords internal
 #' @noRd
 
@@ -657,6 +644,7 @@ cat_estimation.svyby <- function(estimation, call, level = 0.95) {
 #' @importFrom data.table data.table
 #' @importFrom survey SE cv
 #' @importFrom stats coef
+#' @exportS3Method cat_estimation default
 #' @keywords internal
 
 cat_estimation.default <- function(estimation, call, level = 0.95) {
@@ -682,6 +670,7 @@ cat_estimation.default <- function(estimation, call, level = 0.95) {
 #' @param estimation cvystat object from convey functions
 #' @param call Call string
 #' @importFrom data.table data.table
+#' @exportS3Method cat_estimation cvystat
 #' @keywords internal
 #' @noRd
 cat_estimation.cvystat <- function(estimation, call, level = 0.95) {
@@ -719,6 +708,7 @@ cat_estimation.cvystat <- function(estimation, call, level = 0.95) {
 #' @importFrom data.table data.table
 #' @importFrom survey SE cv
 #' @importFrom stats coef
+#' @exportS3Method cat_estimation svyratio
 #' @keywords internal
 #' @noRd
 

@@ -71,7 +71,7 @@ RecipeUser <- R6::R6Class(
         msvy_abort(
           paste0(
             "user_type must be one of: ",
-            paste(valid_types, collapse = ", ")
+            toString(valid_types)
           ),
           class = "metasurvey_error_recipe"
         )
