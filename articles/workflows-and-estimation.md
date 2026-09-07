@@ -412,7 +412,7 @@ to trace any estimate back to the raw data.
 prov <- provenance(svy_full)
 prov
 #> ── Data Provenance ─────────────────────────────────────────────────────────────
-#> Loaded: 2026-08-01T18:54:38 
+#> Loaded: 2026-09-07T10:36:26 
 #> Initial rows: 200 
 #> 
 #> Environment:
@@ -468,7 +468,7 @@ workflow_table(estimates)
 | Statistic | variable | Estimate | SE | CI Lower | CI Upper | CV (%) | Quality |
 | :svymean: api_growth | api_growth | 32.89 | 2.158 | 28.66 | 37.12 | 6.6 | Very good |
 | :svymean: high_growth | high_growth | 0.29 | 0.036 | 0.22 | 0.37 | 12.4 | Good |
-| metasurvey 0.3.1 \| CI: 95% \| 2026-08-01 |  |  |  |  |  |  |  |
+| metasurvey 0.3.1 \| CI: 95% \| 2026-09-07 |  |  |  |  |  |  |  |
 
 You can customize the output:
 
@@ -490,7 +490,7 @@ workflow_table(
 | Statistic | variable | Estimate | CI Lower | CI Upper | CV (%) | Quality |
 | :svymean: api_growth | api_growth | 32,89 | 28,66 | 37,12 | 6,6 | Very good |
 | :svymean: high_growth | high_growth | 0,29 | 0,22 | 0,37 | 12,4 | Good |
-| metasurvey 0.3.1 \| CI: 95% \| 2026-08-01 |  |  |  |  |  |  |
+| metasurvey 0.3.1 \| CI: 95% \| 2026-09-07 |  |  |  |  |  |  |
 
 For domain estimates, the table detects group columns automatically:
 
@@ -505,7 +505,7 @@ workflow_table(by_school)
 | :svyby: api00 | api00 | E | 674.43 | 12.493 | 649.94 | 698.92 | 1.9 | Excellent |
 | :svyby: api00 | api00 | H | 625.82 | 15.341 | 595.75 | 655.89 | 2.5 | Excellent |
 | :svyby: api00 | api00 | M | 636.60 | 16.502 | 604.26 | 668.94 | 2.6 | Excellent |
-| metasurvey 0.3.1 \| CI: 95% \| 2026-08-01 |  |  |  |  |  |  |  |  |
+| metasurvey 0.3.1 \| CI: 95% \| 2026-09-07 |  |  |  |  |  |  |  |  |
 
 Export to any format supported by
 [`gt::gtsave()`](https://gt.rstudio.com/reference/gtsave.html):
