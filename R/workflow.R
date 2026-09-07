@@ -242,8 +242,8 @@ workflow_default <- function(survey, ..., estimation_type = "monthly",
                     call <- as.call(call)
                     estimation <- eval(
                       call,
-                      envir = list(
-                        design = .apply_domain(
+                      envir = .estimation_mask(
+                        .apply_domain(
                           survey$design[[x]], domain$domain
                         )
                       )
@@ -439,8 +439,8 @@ workflow_pool <- function(survey, ..., estimation_type = "monthly",
                     call <- as.call(call)
                     estimation <- eval(
                       call,
-                      envir = list(
-                        design = .apply_domain(
+                      envir = .estimation_mask(
+                        .apply_domain(
                           survey_item$design[[estimation_type]],
                           domain$domain
                         )
@@ -501,6 +501,24 @@ workflow_pool <- function(survey, ..., estimation_type = "monthly",
   return(out)
 }
 
+
+# Estimation calls run with the design injected via a list mask; the
+# survey estimators live in Imports, so they are exposed in the same mask
+# for the frequent case where the user writes them unqualified
+# (e.g. FUN = svytotal inside survey::svyby) without attaching survey.
+.estimation_mask <- function(design) {
+  list(
+    design = design,
+    svymean = survey::svymean,
+    svytotal = survey::svytotal,
+    svyratio = survey::svyratio,
+    svyby = survey::svyby,
+    svyquantile = survey::svyquantile,
+    svyvar = survey::svyvar,
+    svyciprop = survey::svyciprop,
+    unwtd.count = survey::unwtd.count
+  )
+}
 
 .extract_level <- function(call_args, default) {
   if ("level" %in% names(call_args)) {

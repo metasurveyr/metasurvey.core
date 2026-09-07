@@ -904,13 +904,24 @@ get_recipe <- function(
 }
 
 #' Convert a list of steps to a recipe
-#' @param name A character string with the name of the recipe
-#' @param user A character string with the user of the recipe
-#' @param svy A Survey object
-#' @param description A character string with the description of the recipe
-#' @param steps A list with the steps of the recipe
-#' @param doi A character string with the DOI of the recipe
-#' @param topic A character string with the topic of the recipe
+#' @param name A character string with the name of the recipe. Defaults to
+#'   the name of `recipe` when one is supplied.
+#' @param user A character string with the user of the recipe. Defaults to
+#'   the user of `recipe` when one is supplied.
+#' @param svy A Survey object. When omitted and `recipe` is supplied, an
+#'   empty survey with the type and edition of that recipe is used.
+#' @param description A character string with the description of the recipe.
+#'   When omitted, the description of `recipe` is used, so a recipe created
+#'   beforehand with [recipe()] does not need to repeat it.
+#' @param steps A list with the steps of the recipe. Defaults to the steps
+#'   registered in `svy` (see [get_steps()]).
+#' @param doi A character string with the DOI of the recipe. Defaults to
+#'   the DOI of `recipe` when one is supplied.
+#' @param topic A character string with the topic of the recipe. Defaults to
+#'   the topic of `recipe` when one is supplied.
+#' @param recipe An optional Recipe object created beforehand with
+#'   [recipe()]. Its metadata (name, user, description, doi, topic) fills in
+#'   any of those arguments not supplied explicitly.
 #' @keywords step
 #' @keywords survey
 #' @return A Recipe object
@@ -933,17 +944,69 @@ get_recipe <- function(
 #'   steps = get_steps(svy)
 #' )
 #' my_recipe
+#'
+#' # Or inherit the metadata from a recipe created beforehand
+#' base <- recipe(
+#'   name = "age_vars", user = "analyst",
+#'   svy = survey_empty(type = "demo", edition = "2023"),
+#'   description = "Age-derived variables"
+#' )
+#' my_recipe2 <- steps_to_recipe(svy = svy, recipe = base)
+#' my_recipe2
 #' }
 #' @family recipes
 #' @export
 
 steps_to_recipe <- function(
-  name,
-  user,
-  svy = survey_empty(type = "eaii", edition = "2019-2021"),
-  description,
-  steps, doi = NULL, topic = NULL
+  name = NULL,
+  user = NULL,
+  svy = NULL,
+  description = NULL,
+  steps = NULL, doi = NULL, topic = NULL,
+  recipe = NULL
 ) {
+  if (!is.null(recipe)) {
+    if (!inherits(recipe, "Recipe")) {
+      msvy_abort(
+        "recipe must be a Recipe object",
+        class = "metasurvey_error_recipe"
+      )
+    }
+    name <- name %||% recipe$name
+    user <- user %||% recipe$user
+    description <- description %||% recipe$description
+    doi <- doi %||% recipe$doi
+    topic <- topic %||% recipe$topic
+    svy <- svy %||% survey_empty(
+      type = recipe$survey_type,
+      edition = recipe$edition
+    )
+  }
+
+  svy <- svy %||% survey_empty(type = "eaii", edition = "2019-2021")
+  steps <- steps %||% get_steps(svy)
+
+  missing_meta <- c(
+    if (is.null(name)) "name",
+    if (is.null(user)) "user",
+    if (is.null(description)) "description"
+  )
+  if (length(missing_meta) > 0) {
+    msvy_abort(
+      c(
+        paste0(
+          "steps_to_recipe() is missing: ",
+          toString(missing_meta)
+        ),
+        "i" = paste0(
+          "Supply them directly or pass a recipe created with recipe() ",
+          "via the `recipe` argument to inherit its metadata"
+        )
+      ),
+      class = "metasurvey_error_recipe"
+    )
+  }
+
   return(
     recipe(
       name = name,
