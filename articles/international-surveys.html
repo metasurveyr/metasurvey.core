@@ -335,7 +335,7 @@ toybase.</p>
 <span>    comment <span class="op">=</span> <span class="st">"Sex from CH04"</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/step_compute.html">step_compute</a></span><span class="op">(</span></span>
-<span>    employed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">ESTADO</span> <span class="op">==</span> <span class="fl">1</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
+<span>    employed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">ESTADO</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>,</span>
 <span>    comment <span class="op">=</span> <span class="st">"Employment indicator"</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/bake_steps.html">bake_steps</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -655,7 +655,7 @@ survey:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">svy_demo</span> <span class="op">&lt;-</span> <span class="va">svy_demo</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="../reference/step_compute.html">step_compute</a></span><span class="op">(</span>indicator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;</span> <span class="fl">30</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/step_compute.html">step_compute</a></span><span class="op">(</span>indicator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">age</span> <span class="op">&gt;</span> <span class="fl">30</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/step_recode.html">step_recode</a></span><span class="op">(</span><span class="va">age_group</span>,</span>
 <span>    <span class="va">age</span> <span class="op">&lt;</span> <span class="fl">30</span> <span class="op">~</span> <span class="st">"Young"</span>,</span>
 <span>    <span class="va">age</span> <span class="op">&gt;=</span> <span class="fl">30</span> <span class="op">~</span> <span class="st">"Adult"</span>,</span>
@@ -672,9 +672,9 @@ survey:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">doc</span> <span class="op">&lt;-</span> <span class="va">my_recipe</span><span class="op">$</span><span class="fu">doc</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Inputs:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">doc</span><span class="op">$</span><span class="va">input_variables</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Inputs:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/toString.html" class="external-link">toString</a></span><span class="op">(</span><span class="va">doc</span><span class="op">$</span><span class="va">input_variables</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Inputs: age</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Outputs:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">doc</span><span class="op">$</span><span class="va">output_variables</span>, collapse <span class="op">=</span> <span class="st">", "</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Outputs:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/toString.html" class="external-link">toString</a></span><span class="op">(</span><span class="va">doc</span><span class="op">$</span><span class="va">output_variables</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Outputs: indicator, age_group</span></span></code></pre></div>
 <p>Recipes capture <em>what</em> transformations to apply, not
 <em>which</em> survey they came from. A recipe built for EPH can be

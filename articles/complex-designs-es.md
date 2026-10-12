@@ -396,7 +396,7 @@ se puede visualizar el grafo de dependencias entre steps:
 # Requires the visNetwork package
 svy_viz <- step_compute(svy_simple,
   api_diff = api00 - api99,
-  high_growth = ifelse(api00 - api99 > 50, 1L, 0L)
+  high_growth = as.integer(api00 - api99 > 50)
 )
 view_graph(svy_viz, init_step = "Load API data")
 ```
@@ -450,9 +450,9 @@ my_recipe <- steps_to_recipe(
 
 # Check documentation is correct
 doc <- my_recipe$doc()
-cat("Input variables:", paste(doc$input_variables, collapse = ", "), "\n")
+cat("Input variables:", toString(doc$input_variables), "\n")
 #> Input variables: api00, api99
-cat("Output variables:", paste(doc$output_variables, collapse = ", "), "\n")
+cat("Output variables:", toString(doc$output_variables), "\n")
 #> Output variables: api_diff
 
 # Validate against the survey
@@ -495,7 +495,7 @@ validate_pipeline <- function(svy) {
     message("All validation checks passed")
   } else {
     failed <- names(checks)[!unlist(checks)]
-    warning("Failed checks: ", paste(failed, collapse = ", "))
+    warning("Failed checks: ", toString(failed))
   }
   invisible(checks)
 }

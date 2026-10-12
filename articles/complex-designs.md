@@ -446,9 +446,9 @@ my_recipe <- steps_to_recipe(
 
 # Check documentation is correct
 doc <- my_recipe$doc()
-cat("Input variables:", paste(doc$input_variables, collapse = ", "), "\n")
+cat("Input variables:", toString(doc$input_variables), "\n")
 #> Input variables: api00, api99
-cat("Output variables:", paste(doc$output_variables, collapse = ", "), "\n")
+cat("Output variables:", toString(doc$output_variables), "\n")
 #> Output variables: api_diff
 
 # Validate against the survey
@@ -490,7 +490,7 @@ validate_pipeline <- function(svy) {
     message("All validation checks passed")
   } else {
     failed <- names(checks)[!unlist(checks)]
-    warning("Failed checks: ", paste(failed, collapse = ", "))
+    warning("Failed checks: ", toString(failed))
   }
   invisible(checks)
 }

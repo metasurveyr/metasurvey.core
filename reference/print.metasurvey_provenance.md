@@ -41,7 +41,7 @@ s <- step_compute(s, age2 = age * 2)
 s <- bake_steps(s)
 print(provenance(s))
 #> ── Data Provenance ─────────────────────────────────────────────────────────────
-#> Loaded: 2026-09-07T10:35:23 
+#> Loaded: 2026-10-12T14:34:35 
 #> 
 #> Pipeline:
 #>   1. step_1 Compute: age2  N=48 [0.0ms]

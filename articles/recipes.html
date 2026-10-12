@@ -196,7 +196,7 @@ on a survey, then convert the recorded steps into a recipe.</p>
 <span><span class="co"># Develop transformations interactively</span></span>
 <span><span class="va">svy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/step_compute.html">step_compute</a></span><span class="op">(</span><span class="va">svy</span>,</span>
 <span>  income_thousands <span class="op">=</span> <span class="va">income</span> <span class="op">/</span> <span class="fl">1000</span>,</span>
-<span>  employed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">activity</span> <span class="op">==</span> <span class="fl">2</span>, <span class="fl">1L</span>, <span class="fl">0L</span><span class="op">)</span>,</span>
+<span>  employed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">activity</span> <span class="op">==</span> <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  comment <span class="op">=</span> <span class="st">"Income scaling and employment indicator"</span></span>
 <span><span class="op">)</span></span>
 <span></span>

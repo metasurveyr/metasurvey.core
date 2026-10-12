@@ -7,7 +7,7 @@ option has a working default.
 
 ## Value
 
-No return value. This topic documents the global options recognised by
+No return value. This topic documents the global options recognized by
 metasurvey.core and their defaults.
 
 ## Options

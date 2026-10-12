@@ -136,7 +136,7 @@ svy_eph <- svy_eph |>
     comment = "Sexo (CH04)"
   ) |>
   step_compute(
-    employed = ifelse(ESTADO == 1, 1L, 0L),
+    employed = as.integer(ESTADO == 1),
     comment = "Indicador de empleo"
   ) |>
   bake_steps()
@@ -479,7 +479,7 @@ svy_demo <- Survey$new(
 )
 
 svy_demo <- svy_demo |>
-  step_compute(indicator = ifelse(age > 30, 1L, 0L)) |>
+  step_compute(indicator = as.integer(age > 30)) |>
   step_recode(age_group,
     age < 30 ~ "Young",
     age >= 30 ~ "Adult",
@@ -496,9 +496,9 @@ my_recipe <- steps_to_recipe(
 )
 
 doc <- my_recipe$doc()
-cat("Entradas:", paste(doc$input_variables, collapse = ", "), "\n")
+cat("Entradas:", toString(doc$input_variables), "\n")
 #> Entradas: age
-cat("Salidas:", paste(doc$output_variables, collapse = ", "), "\n")
+cat("Salidas:", toString(doc$output_variables), "\n")
 #> Salidas: indicator, age_group
 ```
 

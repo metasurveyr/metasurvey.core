@@ -5,7 +5,8 @@ cat_estimation_default
 ## Usage
 
 ``` r
-cat_estimation.default(estimation, call, level = 0.95)
+# Default S3 method
+cat_estimation(estimation, call, level = 0.95)
 ```
 
 ## Arguments
