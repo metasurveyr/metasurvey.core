@@ -65,8 +65,8 @@ test_that("certified_at is auto-set to current time", {
   before <- Sys.time()
   cert <- RecipeCertification$new(level = "community")
   after <- Sys.time()
-  expect_true(cert$certified_at >= before)
-  expect_true(cert$certified_at <= after)
+  expect_gte(cert$certified_at, before)
+  expect_lte(cert$certified_at, after)
 })
 
 test_that("notes field stores extra info", {
@@ -106,7 +106,7 @@ test_that("to_list serialization works", {
   expect_equal(lst$level, "official")
   expect_equal(lst$certified_by$name, "IECON")
   expect_equal(lst$notes, "Approved")
-  expect_true(!is.null(lst$certified_at))
+  expect_false(is.null(lst$certified_at))
 })
 
 test_that("from_list deserialization works", {

@@ -144,7 +144,7 @@ RecipeWorkflow <- R6Class("RecipeWorkflow",
           doi = self$doi,
           id = self$id,
           categories = if (length(cat_names) > 0) {
-            paste(cat_names, collapse = ", ")
+            toString(cat_names)
           } else {
             NULL
           },
@@ -423,7 +423,7 @@ print.RecipeWorkflow <- function(x, ...) {
   if (length(x$estimation_type) > 0) {
     cat(
       cli::col_silver("Estimation types: "),
-      paste(x$estimation_type, collapse = ", "),
+      toString(x$estimation_type),
       "\n",
       sep = ""
     )
@@ -457,7 +457,7 @@ print.RecipeWorkflow <- function(x, ...) {
     cat(cli::style_bold(cli::col_blue(paste0(
       "\n\u2500\u2500 Uses Recipes (", length(x$recipe_ids), ") \u2500\u2500\n"
     ))))
-    cat("  ", paste(x$recipe_ids, collapse = ", "), "\n", sep = "")
+    cat("  ", toString(x$recipe_ids), "\n", sep = "")
   }
 
   # Estimations

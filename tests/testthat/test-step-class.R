@@ -39,7 +39,7 @@ test_that("Step stores dependencies correctly", {
     depends_on = list("var1", "var2", "var3")
   )
 
-  expect_equal(length(step$depends_on), 3)
+  expect_length(step$depends_on, 3)
   expect_true("var1" %in% step$depends_on)
 })
 
@@ -59,7 +59,7 @@ test_that("Step can be created with minimal arguments", {
 
   expect_s3_class(step, "Step")
   expect_null(step$new_var)
-  expect_equal(length(step$exprs), 0)
+  expect_length(step$exprs, 0)
 })
 
 test_that("Step bake flag can be toggled", {
@@ -143,7 +143,7 @@ test_that("Step stores expressions as list", {
   )
 
   expect_type(step$exprs, "list")
-  expect_equal(length(step$exprs), 2)
+  expect_length(step$exprs, 2)
   expect_true("a" %in% names(step$exprs))
 })
 
@@ -157,7 +157,7 @@ test_that("validate_step returns TRUE when all deps exist", {
     call = NULL, svy_before = NULL, default_engine = "data.table",
     depends_on = list("age", "income")
   )
-  expect_true(metasurvey.core:::validate_step(s, step))
+  expect_true(validate_step(s, step))
 })
 
 test_that("validate_step errors when deps missing", {
@@ -168,7 +168,7 @@ test_that("validate_step errors when deps missing", {
     call = NULL, svy_before = NULL, default_engine = "data.table",
     depends_on = list("nonexistent_var")
   )
-  expect_error(metasurvey.core:::validate_step(s, step), class = "metasurvey_error_step")
+  expect_error(validate_step(s, step), class = "metasurvey_error_step")
 })
 
 test_that("validate_step with empty deps returns TRUE", {
@@ -179,7 +179,7 @@ test_that("validate_step with empty deps returns TRUE", {
     call = NULL, svy_before = NULL, default_engine = "data.table",
     depends_on = list()
   )
-  expect_true(metasurvey.core:::validate_step(s, step))
+  expect_true(validate_step(s, step))
 })
 
 # --- bake_step tests ---
@@ -192,7 +192,7 @@ test_that("bake_step skips already-baked steps", {
     call = NULL, svy_before = NULL, default_engine = "data.table",
     depends_on = list(), bake = TRUE
   )
-  result <- metasurvey.core:::bake_step(s, step)
+  result <- bake_step(s, step)
   expect_s3_class(result, "Survey")
 })
 
@@ -202,7 +202,7 @@ test_that("bake_step skips already-baked steps", {
 test_that("bake_steps_survey bakes all pending steps", {
   s <- make_test_survey()
   s2 <- step_compute(s, age_plus_one = age + 1)
-  s3 <- metasurvey.core:::bake_steps_survey(s2)
+  s3 <- bake_steps_survey(s2)
   expect_true("age_plus_one" %in% names(s3$data))
   # Steps should be marked as baked
   expect_true(all(vapply(s3$steps, function(st) st$bake, logical(1))))
@@ -237,7 +237,7 @@ test_that("bake_step executes step_remove step", {
   s2 <- step_remove(s, x)
   steps <- s2$steps
   step <- steps[[1]]
-  result <- metasurvey.core:::bake_step(s2, step)
+  result <- bake_step(s2, step)
   expect_s3_class(result, "Survey")
   expect_false("x" %in% names(result$data))
 })
@@ -249,7 +249,7 @@ test_that("bake_step executes step_rename step", {
   s2 <- step_rename(s, years = age)
   steps <- s2$steps
   step <- steps[[1]]
-  result <- metasurvey.core:::bake_step(s2, step)
+  result <- bake_step(s2, step)
   expect_s3_class(result, "Survey")
 })
 
@@ -279,7 +279,7 @@ test_that("bake_steps_survey with use_copy=FALSE runs without error", {
 
   s <- make_test_survey()
   s2 <- step_compute(s, z = age + 1, use_copy = FALSE)
-  s3 <- metasurvey.core:::bake_steps_survey(s2)
+  s3 <- bake_steps_survey(s2)
   expect_s3_class(s3, "Survey")
 })
 
@@ -304,7 +304,7 @@ test_that("bake_step validation warning returns survey with invalid deps", {
   )
   # Step with empty deps and empty exprs - bake_step should handle it
   # The step is "compute" type, so it goes to do.call path
-  result <- tryCatch(metasurvey.core:::bake_step(s, step), error = function(e) s)
+  result <- tryCatch(bake_step(s, step), error = function(e) s)
   expect_s3_class(result, "Survey")
 })
 
@@ -317,7 +317,7 @@ test_that("bake_step errors on validation failure", {
     depends_on = list("nonexistent_var"), bake = FALSE
   )
   expect_error(
-    metasurvey.core:::bake_step(s, step),
+    bake_step(s, step),
     class = "metasurvey_error_step"
   )
 })
@@ -331,7 +331,7 @@ test_that("bake_step rejects invalid step type", {
     default_engine = "data.table", depends_on = list(), bake = FALSE
   )
   expect_error(
-    metasurvey.core:::bake_step(s, step),
+    bake_step(s, step),
     class = "metasurvey_error_step"
   )
 })

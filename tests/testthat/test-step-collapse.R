@@ -56,7 +56,7 @@ test_that("step_collapse handles all-NA groups without warnings", {
     data = dt, edition = "2023", type = "test",
     psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
   )
-  expect_no_warning(svy <- step_collapse(svy, by = "hh", rule = "max"))
+  svy <- expect_no_warning(step_collapse(svy, by = "hh", rule = "max"))
   d <- get_data(svy)
   expect_true(is.na(d[hh == 1, x]))
   expect_equal(d[hh == 2, x], 5)

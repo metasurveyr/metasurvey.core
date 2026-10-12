@@ -87,8 +87,8 @@ test_that("load_panel_survey validates survey type", {
 test_that("load_panel_survey handles weight structures", {
   # Weight should be named list
   svy_weight <- list(pesoano = "pesoano")
-  expect_true(is.list(svy_weight))
-  expect_true(!is.null(names(svy_weight)))
+  expect_type(svy_weight, "list")
+  expect_false(is.null(names(svy_weight)))
 })
 
 test_that("load_panel_survey processes file lists", {

@@ -24,7 +24,7 @@ test_that("step_recode records step in survey", {
     region == 1 ~ "A",
     .default = "B"
   )
-  expect_true(length(s2$steps) > 0)
+  expect_gt(length(s2$steps), 0)
   expect_true(any(grepl("Recode|recode", names(s2$steps), ignore.case = TRUE)))
 })
 
@@ -37,7 +37,7 @@ test_that("step_recode with .to_factor returns factor", {
     .to_factor = TRUE
   )
   expect_true("region_label" %in% names(s2$data))
-  expect_true(is.factor(s2$data$region_label))
+  expect_s3_class(s2$data$region_label, "factor")
 })
 
 test_that("step_recode applies conditions with use_copy=FALSE", {
@@ -111,7 +111,7 @@ test_that("bake_steps preserves .default and .to_factor on recode steps", {
     .copy = TRUE
   )
   baked3 <- bake_steps(s3)
-  expect_true(is.factor(baked3$data$region_f))
+  expect_s3_class(baked3$data$region_f, "factor")
   expect_false(anyNA(baked3$data$region_f))
 })
 
@@ -159,7 +159,7 @@ test_that("step_recode with numeric RHS and .to_factor = TRUE", {
     psu = NULL, engine = "data.table", weight = add_weight(annual = "w")
   )
   s2 <- step_recode(s, f, x <= 2 ~ 1, x > 2 ~ 2, .default = 0, .to_factor = TRUE)
-  expect_true(is.factor(s2$data$f))
+  expect_s3_class(s2$data$f, "factor")
   expect_identical(as.character(s2$data$f), c("1", "1", "2", "2"))
 })
 
@@ -219,8 +219,8 @@ test_that("bake_steps preserves non-literal ordered and .to_factor", {
     .copy = TRUE
   )
   baked <- bake_steps(s2)
-  expect_true(is.factor(baked$data$lvl))
-  expect_true(is.ordered(baked$data$lvl))
+  expect_s3_class(baked$data$lvl, "factor")
+  expect_s3_class(baked$data$lvl, "ordered")
   expect_false(anyNA(baked$data$lvl))
   expect_setequal(as.character(unique(baked$data$lvl)), c("low", "high"))
 })

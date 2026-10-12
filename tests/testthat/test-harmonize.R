@@ -10,7 +10,7 @@ test_that("topo_sort_recipes: empty list returns empty", {
 test_that("topo_sort_recipes: single recipe returns as-is", {
   r <- make_eco_recipe("A", "u")
   result <- topo_sort_recipes(list(r))
-  expect_equal(length(result), 1)
+  expect_length(result, 1)
   expect_equal(result[[1]]$name, "A")
 })
 
@@ -41,10 +41,10 @@ test_that("topo_sort_recipes: diamond dependency", {
   result <- topo_sort_recipes(list(rD, rC, rB, rA))
   names_order <- vapply(result, function(r) r$name, character(1))
   # A must come before B and C; B and C must come before D
-  expect_true(which(names_order == "A") < which(names_order == "B"))
-  expect_true(which(names_order == "A") < which(names_order == "C"))
-  expect_true(which(names_order == "B") < which(names_order == "D"))
-  expect_true(which(names_order == "C") < which(names_order == "D"))
+  expect_lt(which(names_order == "A"), which(names_order == "B"))
+  expect_lt(which(names_order == "A"), which(names_order == "C"))
+  expect_lt(which(names_order == "B"), which(names_order == "D"))
+  expect_lt(which(names_order == "C"), which(names_order == "D"))
 })
 
 test_that("topo_sort_recipes: cycle detection", {
@@ -64,7 +64,7 @@ test_that("topo_sort_recipes: external deps are ignored", {
   r1$depends_on_recipes <- list("nonexistent_id_123")
 
   result <- topo_sort_recipes(list(r1))
-  expect_equal(length(result), 1)
+  expect_length(result, 1)
   expect_equal(result[[1]]$name, "A")
 })
 
@@ -104,7 +104,7 @@ test_that("harmonize: no recipes warns and returns unchanged", {
 
   expect_s3_class(pool, "PoolSurvey")
   surveys_out <- pool$surveys$annual$series
-  expect_equal(length(surveys_out), 1)
+  expect_length(surveys_out, 1)
 })
 
 test_that("harmonize: applies recipes and returns PoolSurvey", {
@@ -139,7 +139,7 @@ test_that("harmonize: applies recipes and returns PoolSurvey", {
 
   expect_s3_class(pool, "PoolSurvey")
   surveys_out <- pool$surveys$annual$series
-  expect_equal(length(surveys_out), 2)
+  expect_length(surveys_out, 2)
   # Recipes were baked
   expect_true("flag" %in% names(get_data(surveys_out[[1]])))
   expect_true("flag" %in% names(get_data(surveys_out[[2]])))
@@ -174,8 +174,8 @@ test_that("harmonize: respects dependency order", {
   publish_recipe(r_derived)
   publish_recipe(r_base)
 
-  suppressWarnings(
-    pool <- harmonize(list(svy), .verbose = FALSE)
+  pool <- suppressWarnings(
+    harmonize(list(svy), .verbose = FALSE)
   )
   result_data <- get_data(pool$surveys$annual$series[[1]])
   expect_true("base_val" %in% names(result_data))

@@ -67,7 +67,7 @@ test_that("load_survey handles RDS files", {
   tmp <- tempfile(fileext = ".rds")
   on.exit(unlink(tmp), add = TRUE)
   saveRDS(df, tmp)
-  result <- metasurvey.core:::read_file(tmp)
+  result <- read_file(tmp)
   expect_true(data.table::is.data.table(result) || is.data.frame(result))
   expect_true("id" %in% names(result))
 })
@@ -78,8 +78,8 @@ test_that("load_survey handles XLSX files", {
   tmp <- tempfile(fileext = ".xlsx")
   on.exit(unlink(tmp), add = TRUE)
   openxlsx::write.xlsx(df, tmp)
-  result <- metasurvey.core:::read_file(tmp)
-  expect_true(is.data.frame(result))
+  result <- read_file(tmp)
+  expect_s3_class(result, "data.frame")
   expect_true("id" %in% names(result))
 })
 
@@ -89,8 +89,8 @@ test_that("load_survey handles DTA files", {
   tmp <- tempfile(fileext = ".dta")
   on.exit(unlink(tmp), add = TRUE)
   foreign::write.dta(df, tmp)
-  result <- metasurvey.core:::read_file(tmp, .args = list(file = tmp))
-  expect_true(is.data.frame(result))
+  result <- read_file(tmp, .args = list(file = tmp))
+  expect_s3_class(result, "data.frame")
   expect_true("x1" %in% names(result))
 })
 
@@ -102,9 +102,9 @@ test_that("load_survey handles SAV files", {
   on.exit(unlink(tmp), add = TRUE)
   haven::write_sav(df, tmp)
   # foreign::read.spss needs to.data.frame=TRUE for proper data.frame output
-  result <- metasurvey.core:::read_file(tmp, .args = list(file = tmp, to.data.frame = TRUE))
-  expect_true(is.data.frame(result))
-  expect_true(nrow(result) == 10)
+  result <- read_file(tmp, .args = list(file = tmp, to.data.frame = TRUE))
+  expect_s3_class(result, "data.frame")
+  expect_identical(nrow(result), 10L)
 })
 
 test_that("read_file handles unsupported extension", {
@@ -113,13 +113,13 @@ test_that("read_file handles unsupported extension", {
   on.exit(unlink(tmp), add = TRUE)
 
   expect_error(
-    metasurvey.core:::read_file(tmp),
+    read_file(tmp),
     class = "metasurvey_error_io"
   )
 })
 
 test_that("validate_recipe returns FALSE for mismatched type", {
-  result <- metasurvey.core:::validate_recipe(
+  result <- validate_recipe(
     svy_type = "ech",
     svy_edition = "2023",
     recipe_svy_edition = "2023",
@@ -130,7 +130,7 @@ test_that("validate_recipe returns FALSE for mismatched type", {
 })
 
 test_that("validate_recipe returns FALSE for mismatched edition", {
-  result <- metasurvey.core:::validate_recipe(
+  result <- validate_recipe(
     svy_type = "ech",
     svy_edition = "2023",
     recipe_svy_edition = "2022",
@@ -141,7 +141,7 @@ test_that("validate_recipe returns FALSE for mismatched edition", {
 })
 
 test_that("validate_recipe returns TRUE for matching type and edition", {
-  result <- metasurvey.core:::validate_recipe(
+  result <- validate_recipe(
     svy_type = "ech",
     svy_edition = "2023",
     recipe_svy_edition = "2023",

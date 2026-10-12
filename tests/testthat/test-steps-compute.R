@@ -6,7 +6,7 @@
 test_that("step_compute creates a new variable", {
   s <- make_test_survey()
   s2 <- step_compute(s, total = income + age)
-  expect_true(any(grepl("Compute", names(s2$steps))))
+  expect_true(any(grepl("Compute", names(s2$steps), fixed = TRUE)))
 })
 
 test_that("step_compute result available after bake_steps", {
@@ -28,7 +28,7 @@ test_that("step_compute with multiple variables", {
 test_that("step_compute records step in survey", {
   s <- make_test_survey()
   s2 <- step_compute(s, z = income + 1)
-  expect_true(length(s2$steps) > 0)
+  expect_gt(length(s2$steps), 0)
 })
 
 test_that("step_compute fails on missing variable", {
@@ -43,7 +43,7 @@ test_that("bake_steps with no steps returns survey unchanged", {
   s <- make_test_survey()
   s2 <- bake_steps(s)
   expect_equal(nrow(get_data(s2)), nrow(get_data(s)))
-  expect_equal(names(get_data(s2)), names(get_data(s)))
+  expect_named(get_data(s2), names(get_data(s)))
 })
 
 test_that("multiple step_compute calls chain correctly", {
@@ -119,9 +119,9 @@ test_that("collect_assigned_vars finds all assignment forms in a { } block", {
     d <<- b + zz
     b
   })
-  expect_setequal(metasurvey.core:::collect_assigned_vars(e), c("a", "b", "d"))
+  expect_setequal(collect_assigned_vars(e), c("a", "b", "d"))
   expect_setequal(
-    setdiff(all.vars(e), metasurvey.core:::collect_assigned_vars(e)),
+    setdiff(all.vars(e), collect_assigned_vars(e)),
     c("x", "zz")
   )
 })
@@ -175,7 +175,7 @@ test_that("step_compute chain fails all-or-nothing (no partial state)", {
     step_compute(s, a = age * 2, b = nonexistent_column + a),
     "not in the survey|not found"
   )
-  expect_identical(names(get_data(s)), cols_before)
+  expect_named(get_data(s), cols_before)
 })
 
 test_that("step_compute chains expressions with .by", {
@@ -255,5 +255,5 @@ test_that("step_compute with .by overwrites an existing column in place", {
   expect_identical(d$id, 1:4)
   expect_equal(d$mean_x, c(2, 3, 2, 3))
   # column order untouched (no merge shuffling by-columns to the front)
-  expect_identical(names(d), c("id", "grp", "mean_x", "x", "w"))
+  expect_named(d, c("id", "grp", "mean_x", "x", "w"))
 })

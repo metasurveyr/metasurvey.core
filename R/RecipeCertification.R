@@ -43,7 +43,7 @@ RecipeCertification <- R6::R6Class(
         msvy_abort(
           paste0(
             "level must be one of: ",
-            paste(valid_levels, collapse = ", ")
+            toString(valid_levels)
           ),
           class = "metasurvey_error_recipe"
         )

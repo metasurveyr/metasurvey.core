@@ -93,8 +93,8 @@ test_that("workflow_table kable fallback returns result", {
     estimation_type = "annual"
   )
   # Test the internal kable fallback directly
-  out <- metasurvey.core:::.workflow_table_kable(result, digits = 2)
-  expect_true(!is.null(out))
+  out <- .workflow_table_kable(result, digits = 2)
+  expect_false(is.null(out))
 })
 
 test_that("workflow_table compare_by pivots results", {

@@ -78,7 +78,7 @@ test_that("WorkflowBackend local increment_downloads", {
 
 test_that("WorkflowBackend local find_by_recipe", {
   backend <- WorkflowBackend$new("local")
-  wf1 <- RecipeWorkflow$new(name = "WF With Recipe", recipe_ids = c("r_abc"))
+  wf1 <- RecipeWorkflow$new(name = "WF With Recipe", recipe_ids = "r_abc")
   wf2 <- RecipeWorkflow$new(name = "WF No Recipe", recipe_ids = character(0))
   backend$publish(wf1)
   backend$publish(wf2)

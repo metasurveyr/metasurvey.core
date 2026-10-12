@@ -7,7 +7,7 @@
 
 test_that("msvy_abort appends the metasurvey_error base class", {
   cnd <- tryCatch(
-    metasurvey.core:::msvy_abort("boom", class = "metasurvey_error_step"),
+    msvy_abort("boom", class = "metasurvey_error_step"),
     error = function(e) e
   )
   expect_s3_class(cnd, "metasurvey_error_step")
@@ -16,7 +16,7 @@ test_that("msvy_abort appends the metasurvey_error base class", {
 
 test_that("msvy_warn appends the metasurvey_warning base class", {
   cnd <- tryCatch(
-    metasurvey.core:::msvy_warn("careful", class = "metasurvey_warning_step"),
+    msvy_warn("careful", class = "metasurvey_warning_step"),
     warning = function(w) w
   )
   expect_s3_class(cnd, "metasurvey_warning_step")
@@ -25,7 +25,7 @@ test_that("msvy_warn appends the metasurvey_warning base class", {
 
 test_that("msvy_abort treats braces in messages as literal text", {
   cnd <- tryCatch(
-    metasurvey.core:::msvy_abort(
+    msvy_abort(
       "deparsed code: if (x) {y} else {z}",
       class = "metasurvey_error_step"
     ),
@@ -40,7 +40,7 @@ test_that("msvy_abort treats braces in messages as literal text", {
 
 test_that("stop_input signals a classed input error, message unchanged", {
   cnd <- tryCatch(
-    metasurvey.core:::stop_input(
+    stop_input(
       "my_fn", "my_arg", "must be a thing",
       got = "<numeric>"
     ),
@@ -115,7 +115,7 @@ test_that("api backend without provider signals backend_unavailable", {
   old <- options(metasurvey.backend_provider = NULL)
   on.exit(options(old), add = TRUE)
   cnd <- tryCatch(
-    metasurvey.core:::.backend_api_call("list_recipes"),
+    .backend_api_call("list_recipes"),
     error = function(e) e
   )
   expect_s3_class(cnd, "metasurvey_error_backend_unavailable")

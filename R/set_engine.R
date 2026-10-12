@@ -36,7 +36,7 @@ set_engine <- function(.engine = show_engines()) {
     msvy_abort(
       paste0(
         "Engine '", .engine, "' is not supported. Available: ",
-        paste(.support_engine, collapse = ", ")
+        toString(.support_engine)
       ),
       class = "metasurvey_error_engine"
     )

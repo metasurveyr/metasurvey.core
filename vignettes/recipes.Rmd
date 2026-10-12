@@ -106,7 +106,7 @@ svy <- Survey$new(
 # Develop transformations interactively
 svy <- step_compute(svy,
   income_thousands = income / 1000,
-  employed = ifelse(activity == 2, 1L, 0L),
+  employed = as.integer(activity == 2),
   comment = "Income scaling and employment indicator"
 )
 

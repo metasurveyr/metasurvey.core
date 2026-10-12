@@ -8,7 +8,7 @@ test_that("step_validate records a lazy step", {
   svy2 <- step_validate(svy, income > 0)
   expect_true(has_steps(svy2))
   steps <- get_steps(svy2)
-  expect_equal(length(steps), 1)
+  expect_length(steps, 1)
   expect_equal(steps[[1]]$type, "validate")
   expect_false(steps[[1]]$bake)
 })

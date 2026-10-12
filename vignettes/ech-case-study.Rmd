@@ -181,10 +181,10 @@ svy <- step_recode(svy, labor_status,
 
 # Create binary indicators
 svy <- step_compute(svy,
-  employed = ifelse(POBPCOAC == 2, 1L, 0L),
-  unemployed = ifelse(POBPCOAC %in% 3:5, 1L, 0L),
-  active = ifelse(POBPCOAC %in% 2:5, 1L, 0L),
-  working_age = ifelse(e27 >= 14, 1L, 0L),
+  employed = as.integer(POBPCOAC == 2),
+  unemployed = as.integer(POBPCOAC %in% 3:5),
+  active = as.integer(POBPCOAC %in% 2:5),
+  working_age = as.integer(e27 >= 14),
   comment = "Labor force binary indicators"
 )
 ```

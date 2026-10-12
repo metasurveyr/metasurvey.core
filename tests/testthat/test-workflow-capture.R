@@ -11,7 +11,7 @@ test_that(".capture_workflow returns NULL when no recipes", {
 
   # No recipes -> NULL
   .calls <- quote(list(svymean(~x, na.rm = TRUE)))
-  wf <- metasurvey.core:::.capture_workflow(list(svy), .calls, "annual")
+  wf <- .capture_workflow(list(svy), .calls, "annual")
   expect_null(wf)
 })
 
@@ -34,15 +34,15 @@ test_that(".capture_workflow builds RecipeWorkflow when recipes present", {
   svy$add_recipe(rec)
 
   .calls <- quote(list(svymean(~x, na.rm = TRUE), svytotal(~x, na.rm = TRUE)))
-  wf <- metasurvey.core:::.capture_workflow(list(svy), .calls, "annual")
+  wf <- .capture_workflow(list(svy), .calls, "annual")
 
   expect_s3_class(wf, "RecipeWorkflow")
   expect_equal(wf$recipe_ids, "test_r1")
   expect_equal(wf$survey_type, "ech")
   expect_equal(as.character(wf$edition), "2023")
   expect_equal(wf$estimation_type, "annual")
-  expect_equal(length(wf$calls), 2)
-  expect_equal(length(wf$call_metadata), 2)
+  expect_length(wf$calls, 2)
+  expect_length(wf$call_metadata, 2)
   expect_equal(wf$call_metadata[[1]]$type, "svymean")
   expect_equal(wf$call_metadata[[2]]$type, "svytotal")
 })
@@ -69,7 +69,7 @@ test_that(".capture_workflow extracts multiple recipe IDs", {
   svy$add_recipe(rec2)
 
   .calls <- quote(list(svymean(~x, na.rm = TRUE)))
-  wf <- metasurvey.core:::.capture_workflow(list(svy), .calls, "annual")
+  wf <- .capture_workflow(list(svy), .calls, "annual")
 
   expect_equal(sort(wf$recipe_ids), c("r1", "r2"))
 })
@@ -89,7 +89,7 @@ test_that(".capture_workflow handles svyby calls", {
   svy$add_recipe(rec)
 
   .calls <- quote(list(svyby(~x, ~group, svymean, na.rm = TRUE)))
-  wf <- metasurvey.core:::.capture_workflow(list(svy), .calls, "annual")
+  wf <- .capture_workflow(list(svy), .calls, "annual")
 
   expect_equal(wf$call_metadata[[1]]$type, "svyby")
   expect_equal(wf$call_metadata[[1]]$by, "~group")
@@ -117,7 +117,7 @@ test_that(".capture_workflow handles multiple surveys with Date editions", {
   s2$add_recipe(rec)
 
   .calls <- quote(list(svymean(~x, na.rm = TRUE)))
-  wf <- metasurvey.core:::.capture_workflow(list(s1, s2), .calls, "monthly")
+  wf <- .capture_workflow(list(s1, s2), .calls, "monthly")
 
   expect_s3_class(wf, "RecipeWorkflow")
   expect_identical(as.character(wf$edition), as.character(s1$edition))

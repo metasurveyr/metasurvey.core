@@ -54,7 +54,9 @@ validate_weight <- function(svy, weight) {
     msvy_abort("Weight must be a character", class = "metasurvey_error_survey")
   }
 
-  if (!weight %in% colnames(svy)) {
+  if (weight %in% colnames(svy)) {
+    weight
+  } else {
     msvy_abort(
       glue::glue(
         "Weight column '{weight}' not found in survey data. ",
@@ -62,8 +64,6 @@ validate_weight <- function(svy, weight) {
       ),
       class = "metasurvey_error_survey"
     )
-  } else {
-    weight
   }
 }
 

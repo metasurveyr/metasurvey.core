@@ -146,7 +146,7 @@ validate_step <- function(svy, step) {
     msvy_abort(
       paste0(
         "The following variables are not in the survey: ",
-        paste(missing_vars, collapse = ", ")
+        toString(missing_vars)
       ),
       class = "metasurvey_error_step"
     )
@@ -232,7 +232,7 @@ bake_step <- function(svy, step, .copy = use_copy_default()) {
     msvy_abort(
       paste0(
         "Invalid step type: '", step$type, "'. Must be one of: ",
-        paste(valid_types, collapse = ", ")
+        toString(valid_types)
       ),
       class = "metasurvey_error_step"
     )

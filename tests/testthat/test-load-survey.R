@@ -39,8 +39,8 @@ test_that("load_survey with weight creates survey design", {
     step_compute(double_val = val * 2) %>%
     bake_steps()
 
-  expect_true(length(s$design) >= 1)
-  expect_true(inherits(s$design[[1]], "survey.design"))
+  expect_gte(length(s$design), 1)
+  expect_s3_class(s$design[[1]], "survey.design")
 })
 
 test_that("load_survey preserves all columns", {
@@ -66,7 +66,7 @@ test_that("read_file handles RDS format", {
   tmp <- tempfile(fileext = ".rds")
   on.exit(unlink(tmp), add = TRUE)
   saveRDS(df, tmp)
-  result <- metasurvey.core:::read_file(tmp, .args = list(file = tmp))
+  result <- read_file(tmp, .args = list(file = tmp))
   expect_true(is.data.frame(result) || data.table::is.data.table(result))
   expect_true("id" %in% names(result))
 })
@@ -135,13 +135,13 @@ test_that("load_survey handles multiple weight types", {
   )
 
   expect_s3_class(s, "Survey")
-  expect_true(length(s$weight) >= 2)
+  expect_gte(length(s$weight), 2)
 })
 
 # --- validate_recipe ---
 
 test_that("validate_recipe returns TRUE when type and edition match", {
-  result <- metasurvey.core:::validate_recipe(
+  result <- validate_recipe(
     svy_type = "ech", svy_edition = "2023",
     recipe_svy_edition = "2023", recipe_svy_type = "ech"
   )
@@ -149,7 +149,7 @@ test_that("validate_recipe returns TRUE when type and edition match", {
 })
 
 test_that("validate_recipe returns FALSE when type differs", {
-  result <- metasurvey.core:::validate_recipe(
+  result <- validate_recipe(
     svy_type = "ech", svy_edition = "2023",
     recipe_svy_edition = "2023", recipe_svy_type = "eph"
   )
@@ -157,18 +157,11 @@ test_that("validate_recipe returns FALSE when type differs", {
 })
 
 test_that("validate_recipe returns FALSE when edition differs", {
-  result <- metasurvey.core:::validate_recipe(
+  result <- validate_recipe(
     svy_type = "ech", svy_edition = "2023",
     recipe_svy_edition = "2024", recipe_svy_type = "ech"
   )
   expect_false(result)
-})
-
-# --- config_survey ---
-
-test_that("config_survey returns the call name", {
-  result <- metasurvey.core:::config_survey(a = 1, b = "x")
-  expect_true(!is.null(result))
 })
 
 # --- read_file ---
@@ -178,13 +171,13 @@ test_that("read_file reads a CSV file correctly", {
   on.exit(unlink(tmp), add = TRUE)
   df <- data.frame(id = 1:5, value = c(10, 20, 30, 40, 50), w = 1)
   write.csv(df, tmp, row.names = FALSE)
-  result <- metasurvey.core:::read_file(tmp)
+  result <- read_file(tmp)
   expect_true(data.table::is.data.table(result))
   expect_equal(nrow(result), 5)
 })
 
 test_that("read_file stops on unsupported file type", {
-  expect_error(metasurvey.core:::read_file("file.xyz"), class = "metasurvey_error_io")
+  expect_error(read_file("file.xyz"), class = "metasurvey_error_io")
 })
 
 test_that("read_file reads RDS file", {
@@ -195,7 +188,7 @@ test_that("read_file reads RDS file", {
   df <- data.frame(id = 1:3, val = c("a", "b", "c"))
   saveRDS(df, tmp)
   result <- suppressWarnings(tryCatch(
-    metasurvey.core:::read_file(tmp),
+    read_file(tmp),
     error = function(e) NULL
   ))
   expect_true(is.null(result) || data.table::is.data.table(result))
@@ -205,6 +198,25 @@ test_that("read_file reads RDS file", {
 
 test_that("load_survey errors when no args provided", {
   expect_error(load_survey(), class = "metasurvey_error_io")
+})
+
+test_that("load_survey rejects an unknown engine", {
+  tmp <- tempfile(fileext = ".csv")
+  on.exit(unlink(tmp), add = TRUE)
+  df <- data.frame(id = 1:3, w = 1)
+  write.csv(df, tmp, row.names = FALSE)
+
+  old_engine <- getOption("metasurvey.engine")
+  on.exit(options(metasurvey.engine = old_engine), add = TRUE)
+  options(metasurvey.engine = "arrow")
+
+  expect_error(
+    load_survey(
+      path = tmp, svy_type = "ech", svy_edition = "2023",
+      svy_weight = add_weight(annual = "w")
+    ),
+    class = "metasurvey_error_survey"
+  )
 })
 
 # --- load_survey with bake=TRUE ---
@@ -292,7 +304,7 @@ test_that(
   "Probar extraer time pattern anual",
   {
     testthat::expect_equal(
-      metasurvey.core:::extract_time_pattern("ECH_2023"),
+      extract_time_pattern("ECH_2023"),
       list(
         type = "ECH",
         year = 2023,
@@ -307,7 +319,7 @@ test_that(
   "Probar extraer time pattern mensual",
   {
     testthat::expect_equal(
-      metasurvey.core:::extract_time_pattern("ECH_2023_01"),
+      extract_time_pattern("ECH_2023_01"),
       list(
         type = "ECH",
         year = 2023,
@@ -322,7 +334,7 @@ test_that(
   "Probar extraer time pesos replicados en MM-AAAA",
   {
     testthat::expect_equal(
-      metasurvey.core:::extract_time_pattern("pesos_replicados_01-2023"),
+      extract_time_pattern("pesos_replicados_01-2023"),
       list(
         type = "pesos_replicados",
         year = 2023,
@@ -337,7 +349,7 @@ test_that(
   "Probar extraer time pattern trianual",
   {
     testthat::expect_equal(
-      metasurvey.core:::extract_time_pattern("ECH_2023_2025"),
+      extract_time_pattern("ECH_2023_2025"),
       list(
         type = "ECH",
         year_start = 2023,
@@ -352,7 +364,7 @@ test_that(
   "Probar extraer time pattern multianual",
   {
     testthat::expect_equal(
-      metasurvey.core:::extract_time_pattern("ECH_2023_2026"),
+      extract_time_pattern("ECH_2023_2026"),
       list(
         type = "ECH",
         year_start = 2023,
@@ -367,7 +379,7 @@ test_that(
   "Probar extraer time pattern mensual  MMYYYY",
   {
     testthat::expect_equal(
-      metasurvey.core:::extract_time_pattern("ECH_012023"),
+      extract_time_pattern("ECH_012023"),
       list(
         type = "ECH",
         year = 2023,
@@ -382,7 +394,7 @@ test_that(
   "Probar extraer time pattern mensual  MMYY",
   {
     testthat::expect_equal(
-      metasurvey.core:::extract_time_pattern("ECH_0123"),
+      extract_time_pattern("ECH_0123"),
       list(
         type = "ECH",
         year = 2023,
